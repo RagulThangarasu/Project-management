@@ -16,10 +16,8 @@ services:
         value: 18
 
   # Frontend Static Site
-  - type: web
+  - type: static
     name: hashout-jira-portal
-    env: static
-    plan: free
     buildCommand: npm install && npm run build
     publishDir: dist
     envVars:
