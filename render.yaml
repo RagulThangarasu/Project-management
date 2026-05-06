@@ -11,6 +11,8 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
+      - key: FRONTEND_URL
+        value: https://RagulThangarasu.github.io/Project-management
 
   - type: static
     name: hashout-jira-portal

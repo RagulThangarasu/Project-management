@@ -132,8 +132,9 @@ app.post('/api/invites', async (req, res) => {
       [id, cleanEmail, token, 'pending']
     );
 
-    // Construct accept link (assuming frontend is at localhost:5173)
-    const acceptLink = `http://localhost:5173/accept-invite?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
+    // Construct accept link (dynamically using FRONTEND_URL environment variable)
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const acceptLink = `${frontendUrl}/accept-invite?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
 
     const mailOptions = {
       from: '"Hashout Projects" <noreply@hashouttech.com>',

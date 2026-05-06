@@ -59,7 +59,8 @@ export const DashboardView = ({
     if (currentUser.role !== 'admin') return;
     try {
       setIsLoadingInvites(true);
-      const res = await fetch('http://localhost:3001/api/invites');
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const res = await fetch(`${API_BASE}/invites`);
       const data = await res.json();
       setInvitedUsers(data);
     } catch (err) {

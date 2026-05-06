@@ -51,7 +51,8 @@ function App() {
   const [creatingTaskStatus, setCreatingTaskStatus] = useState<TaskStatus | null>(null);
 
   const handleInviteUser = async (email: string) => {
-    await fetch('http://localhost:3001/api/invites', {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    await fetch(`${API_BASE}/invites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
@@ -59,7 +60,8 @@ function App() {
   };
 
   const handleRemoveInvite = async (email: string) => {
-    await fetch(`http://localhost:3001/api/invites/${encodeURIComponent(email)}`, {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    await fetch(`${API_BASE}/invites/${encodeURIComponent(email)}`, {
       method: 'DELETE'
     });
   };
