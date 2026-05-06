@@ -12,7 +12,7 @@ interface DashboardViewProps {
   taskLists: TaskList[];        // to resolve project membership
   onProjectClick: (project: Project) => void;
   onTaskClick: (taskId: string) => void;
-  onInviteUser?: (email: string) => Promise<void>;
+  onInviteUser?: (email: string) => Promise<string | void>;
   onRemoveInvite?: (email: string) => Promise<void>;
 }
 
@@ -74,12 +74,16 @@ export const DashboardView = ({
     fetchInvites();
   }, []);
 
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+
   const handleInvite = async () => {
     if (!inviteEmail || !onInviteUser) return;
     setIsInviting(true);
     setInviteStatus(null);
+    setGeneratedLink(null);
     try {
-      await onInviteUser(inviteEmail);
+      const link = await onInviteUser(inviteEmail);
+      if (link) setGeneratedLink(link as string);
       setInviteStatus('Success! User has been invited.');
       setInviteEmail('');
       fetchInvites();
@@ -87,7 +91,6 @@ export const DashboardView = ({
       setInviteStatus('Failed to invite user. Please try again.');
     } finally {
       setIsInviting(false);
-      setTimeout(() => setInviteStatus(null), 3000);
     }
   };
 
@@ -171,17 +174,42 @@ export const DashboardView = ({
               {isInviting ? 'Sending...' : 'Invite'}
             </button>
           </div>
-          {inviteStatus && (
-            <p style={{ 
-              marginTop: '0.75rem', 
-              fontSize: '0.85rem', 
-              color: inviteStatus.includes('Success') ? 'var(--status-closed)' : 'var(--priority-high)',
-              fontWeight: 500 
-            }}>
-              {inviteStatus}
-            </p>
-          )}
+            {inviteStatus && (
+              <div style={{ 
+                marginTop: '0.75rem', 
+                fontSize: '0.8rem', 
+                color: inviteStatus.includes('Failed') ? '#ef4444' : '#10b981',
+                fontWeight: 500
+              }}>
+                {inviteStatus}
+              </div>
+            )}
 
+            {generatedLink && (
+              <div style={{ 
+                marginTop: '1rem', 
+                padding: '1rem', 
+                background: '#f8fafc', 
+                border: '1px dashed #cbd5e1', 
+                borderRadius: 'var(--radius-md)' 
+              }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: 600 }}>
+                  MANUAL INVITE LINK (Copy & Send):
+                </div>
+                <div style={{ 
+                  fontSize: '0.8rem', 
+                  wordBreak: 'break-all', 
+                  color: 'var(--brand-orange)', 
+                  fontWeight: 500,
+                  background: 'white',
+                  padding: '0.5rem',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '4px'
+                }}>
+                  {generatedLink}
+                </div>
+              </div>
+            )}
           {/* Invited Users List */}
           {invitedUsers.length > 0 && (
             <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color-light)', paddingTop: '1rem' }}>

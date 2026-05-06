@@ -52,11 +52,13 @@ function App() {
 
   const handleInviteUser = async (email: string) => {
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-    await fetch(`${API_BASE}/invites`, {
+    const res = await fetch(`${API_BASE}/invites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
+    const data = await res.json();
+    return data.acceptLink;
   };
 
   const handleRemoveInvite = async (email: string) => {

@@ -159,7 +159,7 @@ app.post('/api/invites', async (req, res) => {
       }
     });
 
-    res.json({ email: cleanEmail, status: 'pending' });
+    res.json({ email: cleanEmail, status: 'pending', acceptLink: acceptLink });
   } catch (error) {
     console.error("❌ Invitation API Error:", error);
     res.status(500).json({ error: error.message });
