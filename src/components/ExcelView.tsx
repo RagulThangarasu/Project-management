@@ -42,25 +42,20 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
   };
 
   return (
-    <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <FileText size={24} color="var(--accent-primary)" />
-            Excel View
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', letterSpacing: '-0.02em' }}>
+            <FileText size={28} color="var(--brand-orange)" />
+            Task Ledger
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Spreadsheet style overview of all project tasks.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500 }}>Comprehensive spreadsheet overview of project intelligence.</p>
         </div>
         {selectedTasks.size > 0 && (
           <button 
+            className="btn btn-primary"
             onClick={handleDeleteSelected}
-            style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.5rem', 
-              background: 'var(--status-closed)', color: '#fff', 
-              border: 'none', padding: '0.5rem 1rem', 
-              borderRadius: 'var(--radius-md)', cursor: 'pointer',
-              fontWeight: 600, fontSize: '0.875rem'
-            }}
+            style={{ background: 'var(--priority-high)', boxShadow: '0 8px 16px rgba(239, 68, 68, 0.3)' }}
           >
             <Trash2 size={16} />
             Delete Selected ({selectedTasks.size})
@@ -68,24 +63,23 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
         )}
       </div>
 
-      <div style={{ 
+      <div className="glass-card" style={{ 
         flex: 1, 
         overflow: 'auto', 
-        background: 'var(--bg-surface)', 
+        background: 'rgba(255, 255, 255, 0.03)', 
         borderRadius: 'var(--radius-lg)', 
-        border: '1px solid var(--border-color)',
-        boxShadow: 'var(--shadow-sm)'
+        border: '1px solid rgba(255, 255, 255, 0.05)',
       }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'var(--bg-surface)' }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10, background: 'rgba(58, 29, 93, 0.8)', backdropFilter: 'blur(10px)' }}>
             <tr>
               <th style={{ ...headerCellStyle, width: '40px' }}></th>
               <th style={headerCellStyle}>S.No</th>
               <th style={headerCellStyle}>Task Name</th>
               <th style={headerCellStyle}>Description</th>
-              <th style={headerCellStyle}>Component Name</th>
-              <th style={headerCellStyle}>Estimated Time</th>
-              <th style={headerCellStyle}>Hours</th>
+              <th style={headerCellStyle}>Component</th>
+              <th style={headerCellStyle}>Estimate</th>
+              <th style={headerCellStyle}>Logged</th>
               <th style={headerCellStyle}>Assignee</th>
               <th style={headerCellStyle}>Status</th>
             </tr>
@@ -97,11 +91,11 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
                 onClick={() => onTaskClick(task.id)}
                 style={{ 
                   cursor: 'pointer', 
-                  borderBottom: '1px solid var(--border-color-light)',
-                  transition: 'background 0.2s',
-                  background: selectedTasks.has(task.id) ? 'var(--bg-surface-hover)' : 'transparent'
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                  transition: 'var(--transition)',
+                  background: selectedTasks.has(task.id) ? 'rgba(240, 72, 29, 0.05)' : 'transparent'
                 }}
-                onMouseEnter={e => { if (!selectedTasks.has(task.id)) e.currentTarget.style.background = 'var(--bg-surface-hover)'; }}
+                onMouseEnter={e => { if (!selectedTasks.has(task.id)) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; }}
                 onMouseLeave={e => { if (!selectedTasks.has(task.id)) e.currentTarget.style.background = 'transparent'; }}
               >
                 <td style={cellStyle} onClick={e => e.stopPropagation()}>
@@ -112,29 +106,29 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
                     style={{ cursor: 'pointer' }}
                   />
                 </td>
-                <td style={cellStyle}>{index + 1}</td>
-                <td style={{ ...cellStyle, fontWeight: 500, maxWidth: '250px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{task.title}</td>
-                <td style={{ ...cellStyle, color: 'var(--text-secondary)', maxWidth: '300px', whiteSpace: 'normal' }}>
-                  <div style={{ wordBreak: 'break-word' }}>
+                <td style={{ ...cellStyle, color: 'var(--text-secondary)', fontWeight: 600 }}>{index + 1}</td>
+                <td style={{ ...cellStyle, fontWeight: 600, maxWidth: '250px', whiteSpace: 'normal', color: '#fff' }}>{task.title}</td>
+                <td style={{ ...cellStyle, color: 'var(--text-secondary)', maxWidth: '300px', whiteSpace: 'normal', fontSize: '13px' }}>
+                  <div style={{ wordBreak: 'break-word', opacity: 0.8 }}>
                     {task.description ? stripHtml(task.description) : '-'}
                   </div>
                 </td>
-                <td style={{ ...cellStyle, color: 'var(--text-secondary)', maxWidth: '250px', whiteSpace: 'normal' }}>
-                  <div style={{ wordBreak: 'break-word' }}>
+                <td style={{ ...cellStyle, color: 'var(--text-secondary)', maxWidth: '200px', whiteSpace: 'normal' }}>
+                  <span style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '2px 8px', borderRadius: '4px' }}>
                     {task.componentName || '-'}
-                  </div>
+                  </span>
                 </td>
-                <td style={cellStyle}>{task.estimatedTime || '-'}</td>
-                <td style={{ ...cellStyle, fontWeight: 600, color: 'var(--accent-primary)' }}>
+                <td style={{ ...cellStyle, fontWeight: 700 }}>{task.estimatedTime || '-'}</td>
+                <td style={{ ...cellStyle, fontWeight: 800, color: 'var(--brand-orange)' }}>
                   {getLoggedHours(task.id)}h
                 </td>
                 <td style={cellStyle}>
                   {task.assignee ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <div className="avatar" style={{ width: 24, height: 24, fontSize: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <div className="avatar" style={{ width: 24, height: 24, fontSize: '10px', background: 'var(--brand-purple)' }}>
                         {task.assignee.avatar}
                       </div>
-                      <span>{task.assignee.name}</span>
+                      <span style={{ fontWeight: 500 }}>{task.assignee.name}</span>
                     </div>
                   ) : (
                     <span style={{ color: 'var(--text-muted)' }}>Unassigned</span>
@@ -142,11 +136,12 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
                 </td>
                 <td style={cellStyle}>
                   <span style={{ 
-                    padding: '2px 8px', 
-                    borderRadius: 'var(--radius-sm)', 
-                    fontSize: '12px', 
-                    fontWeight: 600,
-                    textTransform: 'capitalize',
+                    padding: '4px 10px', 
+                    borderRadius: '6px', 
+                    fontSize: '11px', 
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
                     background: getStatusBg(task.status),
                     color: getStatusColor(task.status)
                   }}>
@@ -155,13 +150,6 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
                 </td>
               </tr>
             ))}
-            {tasks.length === 0 && (
-              <tr>
-                <td colSpan={9} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  No tasks found for this view.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
       </div>
@@ -171,37 +159,39 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
 
 const headerCellStyle: React.CSSProperties = {
   textAlign: 'left',
-  padding: '1rem',
-  borderBottom: '2px solid var(--border-color)',
-  color: 'var(--text-secondary)',
-  fontWeight: 600,
+  padding: '1.25rem 1rem',
+  color: 'rgba(255, 255, 255, 0.5)',
+  fontWeight: 800,
+  fontSize: '11px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
   whiteSpace: 'nowrap'
 };
 
 const cellStyle: React.CSSProperties = {
-  padding: '1rem',
-  color: 'var(--text-primary)',
+  padding: '1.25rem 1rem',
+  color: 'var(--text-main)',
   whiteSpace: 'nowrap'
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'open': return 'var(--status-open)';
-    case 'in_progress': return '#ffffff';
-    case 'in_review': return '#ffffff';
-    case 'closed': return '#ffffff';
-    case 'backlog': return 'var(--status-backlog)';
-    default: return 'var(--text-primary)';
+    case 'in_progress': return 'var(--status-progress)';
+    case 'in_review': return 'var(--status-review)';
+    case 'closed': return 'var(--status-closed)';
+    case 'backlog': return 'var(--text-muted)';
+    default: return 'var(--text-main)';
   }
 };
 
 const getStatusBg = (status: string) => {
   switch (status) {
-    case 'open': return 'rgba(71, 85, 105, 0.1)';
-    case 'in_progress': return 'var(--status-inprogress)';
-    case 'in_review': return 'var(--status-inreview)';
-    case 'closed': return 'var(--status-closed)';
-    case 'backlog': return 'rgba(100, 116, 139, 0.1)';
+    case 'open': return 'rgba(56, 189, 248, 0.1)';
+    case 'in_progress': return 'rgba(251, 191, 36, 0.1)';
+    case 'in_review': return 'rgba(168, 85, 247, 0.1)';
+    case 'closed': return 'rgba(16, 185, 129, 0.1)';
+    case 'backlog': return 'rgba(255, 255, 255, 0.05)';
     default: return 'transparent';
   }
 };

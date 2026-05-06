@@ -212,10 +212,10 @@ function App() {
   return (
     <div className="app-layout">
       {/* Sidebar */}
-      <aside className="sidebar">
-        <div className="sidebar-header" style={{ padding: '1.5rem 1.25rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '1rem' }}>
-          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '28px' }} />
-          <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px' }}>Project Portal</div>
+      <aside className="sidebar" style={{ background: 'rgba(58, 29, 93, 0.3)', borderRight: '1px solid var(--border-color)', backdropFilter: 'blur(10px)' }}>
+        <div className="sidebar-header" style={{ padding: '2rem 1.5rem', borderBottom: '1px solid var(--border-color-light)', marginBottom: '1rem' }}>
+          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '32px' }} />
+          <div style={{ fontSize: '0.65rem', color: 'var(--brand-orange)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: '6px' }}>Project Intelligence</div>
         </div>
         <nav className="sidebar-nav">
           <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
@@ -290,30 +290,37 @@ function App() {
         </nav>
 
         {/* User Profile Logon - Persistent at Bottom */}
-        <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', padding: '1rem', position: 'relative' }}>
+        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color-light)', padding: '1.25rem', position: 'relative' }}>
           <div 
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
             style={{ 
-              background: 'rgba(255,255,255,0.03)', 
-              borderRadius: 'var(--radius-md)', 
-              padding: '0.6rem',
+              background: 'rgba(255,255,255,0.05)', 
+              borderRadius: 'var(--radius-lg)', 
+              padding: '0.75rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.75rem',
+              gap: '0.875rem',
               cursor: 'pointer',
-              transition: 'background 0.2s'
+              border: '1px solid transparent',
+              transition: 'var(--transition)'
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.borderColor = 'var(--brand-orange)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+              e.currentTarget.style.borderColor = 'transparent';
+            }}
           >
-            <div className="avatar" style={{ width: 32, height: 32, fontSize: '0.85rem', background: 'var(--accent-primary)', color: '#fff', border: 'none' }}>
+            <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.9rem', background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', color: '#fff', border: 'none', boxShadow: '0 4px 12px rgba(240,72,29,0.3)' }}>
               {currentUser.avatar}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {currentUser.name}
               </span>
-              <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {currentUser.role}
               </span>
             </div>

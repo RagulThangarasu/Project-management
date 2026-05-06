@@ -142,13 +142,15 @@ export const DashboardView = ({
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
-      <div>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-          Welcome back, {currentUser.name.split(' ')[0]} 👋
-        </h2>
-        <p style={{ color: 'var(--text-muted)' }}>
-          Here's everything happening across your projects.
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <h2 style={{ fontSize: '1.875rem', fontWeight: 800, marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
+            Welcome back, <span style={{ color: 'var(--brand-orange)' }}>{currentUser.name.split(' ')[0]}</span> 👋
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
+            Here's the latest update on your Hashout projects.
+          </p>
+        </div>
       </div>
 
       {/* Admin Invite Panel */}
@@ -273,42 +275,32 @@ export const DashboardView = ({
       {/* ═══════════════════════════════════════════════════ */}
       {/* KEY METRICS ROW */}
       {/* ═══════════════════════════════════════════════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
         {[
-          { icon: <FolderOpen size={20} />, label: 'My Projects', value: myProjects.length, color: 'var(--accent-primary)' },
-          { icon: <Layout size={20} />, label: 'Active Tasks', value: filteredTasks.length, color: 'var(--status-inprogress)' },
-          { icon: <CheckCircle size={20} />, label: 'Completion', value: `${completionRate}%`, color: 'var(--status-closed)' },
-          { icon: <Clock size={20} />, label: 'Hours Logged', value: totalHours, color: 'var(--priority-medium)' },
-          { icon: <AlertTriangle size={20} />, label: 'High Priority', value: highPriorityTasks, color: highPriorityTasks > 0 ? 'var(--priority-high)' : 'var(--text-muted)' },
+          { icon: <FolderOpen size={22} />, label: 'My Projects', value: myProjects.length, color: 'var(--brand-orange)' },
+          { icon: <Layout size={22} />, label: 'Active Tasks', value: filteredTasks.length, color: 'var(--status-open)' },
+          { icon: <CheckCircle size={22} />, label: 'Completion', value: `${completionRate}%`, color: 'var(--status-closed)' },
+          { icon: <Clock size={22} />, label: 'Hours Logged', value: totalHours, color: 'var(--status-progress)' },
+          { icon: <AlertTriangle size={22} />, label: 'High Priority', value: highPriorityTasks, color: highPriorityTasks > 0 ? 'var(--priority-high)' : 'var(--text-muted)' },
         ].map((m) => (
           <div
             key={m.label}
+            className="glass-card"
             style={{
-              background: 'var(--bg-surface)',
-              padding: '1.25rem',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border-color)',
-              boxShadow: 'var(--shadow-sm)',
+              padding: '1.5rem',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem',
-              transition: 'transform var(--transition-fast), box-shadow var(--transition-fast)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+              gap: '1rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: m.color }}>
+            <div style={{ color: m.color, background: `${m.color}15`, width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {m.icon}
-              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>{m.label}</span>
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 700, color: m.color === 'var(--priority-high)' ? m.color : 'var(--text-primary)' }}>
-              {m.value}
+            <div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                {m.label}
+              </div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{m.value}</div>
             </div>
           </div>
         ))}

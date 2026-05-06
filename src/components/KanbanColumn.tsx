@@ -24,48 +24,61 @@ export const KanbanColumn = ({ id, title, tasks, updateTask, deleteTask, current
   const filteredTasks = filterType === 'all' ? tasks : tasks.filter(t => t.type === filterType);
 
   return (
-    <div className="kanban-column">
-      <div className="column-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span>{title}</span>
-          <span className="column-count">{filteredTasks.length}</span>
+    <div className="glass-card" style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      background: 'rgba(255, 255, 255, 0.02)', 
+      border: '1px solid rgba(255, 255, 255, 0.05)',
+      borderRadius: 'var(--radius-lg)',
+      height: '100%',
+      minWidth: '280px'
+    }}>
+      <div style={{ 
+        padding: '1.25rem', 
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-main)' }}>
+            {title}
+          </h3>
+          <span style={{ 
+            fontSize: '0.7rem', 
+            fontWeight: 700, 
+            background: 'rgba(255, 255, 255, 0.1)', 
+            padding: '2px 8px', 
+            borderRadius: '10px',
+            color: 'var(--text-secondary)'
+          }}>
+            {filteredTasks.length}
+          </span>
         </div>
+        
         <div style={{ position: 'relative' }}>
           <button 
             className="btn-icon" 
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            style={{ 
-              color: filterType !== 'all' ? 'var(--accent-primary)' : 'var(--text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '4px 8px',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              borderRadius: 'var(--radius-md)'
-            }}
+            style={{ color: filterType !== 'all' ? 'var(--brand-orange)' : 'var(--text-muted)' }}
           >
             <Filter size={14} />
-            <span style={{ textTransform: 'capitalize' }}>{filterType}</span>
           </button>
           
           {isFilterOpen && (
             <>
               <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onPointerDown={() => setIsFilterOpen(false)} />
-              <div className="menu-dropdown" style={{ right: 0, top: '100%', marginTop: '0.25rem', width: '120px' }}>
-                <div style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Filter by Type</div>
-                <button className="menu-item" onClick={() => { setFilterType('all'); setIsFilterOpen(false); }}>
-                  All
-                </button>
-                <button className="menu-item" onClick={() => { setFilterType('task'); setIsFilterOpen(false); }}>
-                  Tasks
-                </button>
-                <button className="menu-item" onClick={() => { setFilterType('story'); setIsFilterOpen(false); }}>
-                  Stories
-                </button>
-                <button className="menu-item" onClick={() => { setFilterType('bug'); setIsFilterOpen(false); }}>
-                  Bugs
-                </button>
+              <div className="glass" style={{ position: 'absolute', top: '100%', right: 0, width: '140px', background: 'rgba(31, 41, 55, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: '0.5rem', zIndex: 50, marginTop: '0.5rem' }}>
+                {['all', 'task', 'story', 'bug'].map(type => (
+                  <button 
+                    key={type}
+                    className="menu-item" 
+                    style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', color: filterType === type ? 'var(--brand-orange)' : '#fff', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', textTransform: 'capitalize' }}
+                    onClick={() => { setFilterType(type as any); setIsFilterOpen(false); }}
+                  >
+                    {type}
+                  </button>
+                ))}
               </div>
             </>
           )}
@@ -73,11 +86,17 @@ export const KanbanColumn = ({ id, title, tasks, updateTask, deleteTask, current
       </div>
       
       <div 
-        className="column-body" 
         ref={setNodeRef}
         style={{
-          backgroundColor: isOver ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
-          transition: 'background-color 0.2s ease'
+          flex: 1,
+          padding: '1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          background: isOver ? 'rgba(240, 72, 29, 0.05)' : 'transparent',
+          transition: 'var(--transition)',
+          minHeight: '200px',
+          overflowY: 'auto'
         }}
       >
         <SortableContext items={filteredTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>

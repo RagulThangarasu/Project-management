@@ -54,7 +54,17 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
     <div
       ref={setNodeRef}
       style={style}
-      className="kanban-card animate-fade-in"
+      className="glass-card animate-fade-in"
+      style={{
+        ...style,
+        padding: '1rem',
+        borderRadius: 'var(--radius-md)',
+        background: 'rgba(255, 255, 255, 0.05)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
+      }}
       onPointerDown={(e) => {
         pointerStartRef.current = { x: e.clientX, y: e.clientY };
         didDragRef.current = false;
@@ -76,9 +86,8 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
       {...attributes}
     >
       {/* Top row: drag handle + tags + menu */}
-      <div className="card-tags" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {/* Dedicated drag handle — drag ONLY starts from here */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span
             {...listeners}
             style={{ cursor: 'grab', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', touchAction: 'none' }}
@@ -88,30 +97,13 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
             <GripVertical size={14} />
           </span>
 
-          <span className={`tag tag-priority-${task.priority}`}>{task.priority}</span>
-
-          {task.sprintId && (
-            <span className="tag" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)' }}>
-              ★ {sprints.find(s => s.id === task.sprintId)?.name ?? 'Sprint'}
-            </span>
-          )}
-          {!task.sprintId && sprints[0] && (
-            <span className="tag" style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6', border: '1px solid rgba(139,92,246,0.2)' }}>
-              ★ {sprints[0].name}
-            </span>
-          )}
-          {task.previousSprintId && (
-            <span className="tag" style={{ background: 'rgba(245,158,11,0.1)', color: '#d97706', border: '1px solid rgba(245,158,11,0.2)' }}>
-              Moved From Previous Sprint
-            </span>
-          )}
+          <span className={`tag tag-priority-${task.priority}`} style={{ borderRadius: '4px' }}>{task.priority}</span>
         </div>
 
-        {/* ⋯ Context menu */}
         <div className="menu-container" style={{ position: 'relative' }} onPointerDown={e => e.stopPropagation()}>
           <button
             className="btn-icon"
-            style={{ padding: '2px' }}
+            style={{ padding: '2px', background: 'transparent' }}
             onClick={e => { e.stopPropagation(); setShowMenu(!showMenu); }}
           >
             <MoreHorizontal size={16} />
@@ -120,124 +112,37 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
           {showMenu && (
             <>
               <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onPointerDown={() => setShowMenu(false)} />
-              <div className="menu-dropdown">
-                <div style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Status</div>
-                {['backlog', 'open', 'in_progress', 'in_review', 'closed'].map(s => (
-                  <button
-                    key={s}
-                    className="menu-item"
-                    onClick={e => { e.stopPropagation(); updateTask(task.id, { status: s as TaskStatus }); setShowMenu(false); }}
-                  >
-                    Move to {s.replace('_', ' ')}
-                  </button>
-                ))}
-
-                {currentUser.role === 'admin' && (
-                  <>
-                    <div style={{ margin: '4px 0', height: 1, background: 'var(--border-color)' }} />
-                    <div style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Sprint</div>
-                    {sprints.map(s => (
-                      <button
-                        key={s.id}
-                        className="menu-item"
-                        style={{ fontWeight: (task.sprintId === s.id || (!task.sprintId && s.id === sprints[0]?.id)) ? 600 : 400,
-                                 color: (task.sprintId === s.id || (!task.sprintId && s.id === sprints[0]?.id)) ? 'var(--accent-primary)' : undefined }}
-                        onClick={e => {
-                          e.stopPropagation();
-                          updateTask(task.id, {
-                            sprintId: s.id,
-                            previousSprintId: task.sprintId && task.sprintId !== s.id ? task.sprintId : task.previousSprintId
-                          });
-                          setShowMenu(false);
-                        }}
-                      >
-                        {s.id === sprints[0]?.id ? '★ ' : ''}{s.name}
-                        {(task.sprintId === s.id || (!task.sprintId && s.id === sprints[0]?.id)) ? ' ✓' : ''}
-                      </button>
-                    ))}
-                    <div style={{ margin: '4px 0', height: 1, background: 'var(--border-color)' }} />
-                    <div style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Assign</div>
-                    {mockUsers.map(u => (
-                      <button
-                        key={u.id}
-                        className="menu-item"
-                        onClick={e => { e.stopPropagation(); updateTask(task.id, { assignee: u }); setShowMenu(false); }}
-                      >
-                        {u.name}
-                      </button>
-                    ))}
-                    <div style={{ margin: '4px 0', height: 1, background: 'var(--border-color)' }} />
-                    <button
-                      className="menu-item"
-                      style={{ color: 'var(--priority-high)' }}
-                      onClick={e => { e.stopPropagation(); deleteTask(task.id); }}
-                    >
-                      <Trash2 size={14} style={{ marginRight: 4 }} /> Delete
-                    </button>
-                  </>
-                )}
+              <div className="glass" style={{ position: 'absolute', top: '100%', right: 0, width: '180px', background: 'rgba(31, 41, 55, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: '0.5rem', zIndex: 50, boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+                <div style={{ padding: '4px 8px', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</div>
+                <button
+                  className="menu-item"
+                  style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', color: '#fff', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
+                  onClick={e => { e.stopPropagation(); deleteTask(task.id); }}
+                >
+                  Delete Task
+                </button>
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Title */}
-      <div className="card-title" style={{ fontSize: '14px', fontWeight: 500, margin: '0.5rem 0' }}>
+      <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', lineHeight: 1.4 }}>
         {task.title}
       </div>
 
-      {/* Footer: ID + assignee avatar */}
-      <div className="card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', color: 'var(--text-muted)', alignItems: 'center' }}>
-          <span className="card-id" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{task.id}</span>
-          <span
-            className="tag"
-            style={{
-              background: task.type === 'bug' ? 'rgba(239,68,68,0.1)' : task.type === 'story' ? 'rgba(59,130,246,0.1)' : 'var(--bg-surface-hover)',
-              color: task.type === 'bug' ? '#ef4444' : task.type === 'story' ? '#3b82f6' : 'var(--text-muted)',
-              fontSize: '0.65rem',
-              padding: '2px 6px',
-            }}
-          >
-            {task.type?.toUpperCase() || 'TASK'}
-          </span>
-          {(task.description || task.imageUrl) && <MessageSquare size={12} />}
-        </div>
-
-        <div style={{ position: 'relative' }} onPointerDown={e => e.stopPropagation()}>
-          <div
-            className="avatar"
-            style={{ width: 24, height: 24, fontSize: 10, cursor: currentUser.role === 'admin' ? 'pointer' : 'default' }}
-            onClick={e => { e.stopPropagation(); currentUser.role === 'admin' && setShowAssigneeMenu(!showAssigneeMenu); }}
-            title={task.assignee?.name || 'Unassigned'}
-          >
-            {task.assignee ? task.assignee.avatar : '?'}
-          </div>
-
-          {showAssigneeMenu && currentUser.role === 'admin' && (
-            <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onPointerDown={() => setShowAssigneeMenu(false)} />
-              <div className="menu-dropdown">
-                <div style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Assign To</div>
-                <button
-                  className="menu-item"
-                  onClick={e => { e.stopPropagation(); updateTask(task.id, { assignee: undefined }); setShowAssigneeMenu(false); }}
-                >
-                  Unassigned
-                </button>
-                {mockUsers.map(u => (
-                  <button
-                    key={u.id}
-                    className="menu-item"
-                    onClick={e => { e.stopPropagation(); updateTask(task.id, { assignee: u }); setShowAssigneeMenu(false); }}
-                  >
-                    {u.name}
-                  </button>
-                ))}
-              </div>
-            </>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{task.id}</span>
+          {task.sprintId && (
+            <span style={{ fontSize: '0.65rem', color: 'var(--brand-orange)', fontWeight: 600 }}>
+              ★ {sprints.find(s => s.id === task.sprintId)?.name}
+            </span>
           )}
+        </div>
+        
+        <div className="avatar" style={{ width: 24, height: 24, fontSize: 10, background: 'var(--brand-purple)', border: '1px solid var(--border-color)' }}>
+          {task.assignee ? task.assignee.avatar : '?'}
         </div>
       </div>
     </div>

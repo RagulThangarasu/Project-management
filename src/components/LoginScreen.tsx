@@ -92,47 +92,118 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-base)', position: 'relative', overflow: 'hidden' }}>
-      {/* Decorative Brand Circles */}
-      <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(240, 78, 35, 0.05) 0%, transparent 70%)', borderRadius: '50%' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '30vw', height: '30vw', background: 'radial-gradient(circle, rgba(240, 78, 35, 0.03) 0%, transparent 70%)', borderRadius: '50%' }} />
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      minHeight: '100vh', 
+      background: 'var(--bg-base)', 
+      position: 'relative', 
+      overflow: 'hidden' 
+    }}>
+      {/* Dynamic Background Effects */}
+      <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(240, 72, 29, 0.08) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(58, 29, 93, 0.4) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }} />
 
-      <div style={{ background: 'var(--bg-surface)', padding: '3rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-premium)', width: '100%', maxWidth: 420, position: 'relative', zIndex: 1, border: '1px solid var(--border-color-light)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem' }}>
-          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '45px' }} />
+      <div className="glass-card" style={{ 
+        padding: '3.5rem', 
+        borderRadius: 'var(--radius-lg)', 
+        width: '100%', 
+        maxWidth: 460, 
+        position: 'relative', 
+        zIndex: 1, 
+        border: '1px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
+          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '50px' }} />
         </div>
-        <h2 style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Project Management</h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2.5rem', fontSize: '0.9rem' }}>Sign in to access your dashboard</p>
         
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', letterSpacing: '-0.02em', color: '#fff' }}>Project Management</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500 }}>Sign in to access your dashboard</p>
+        </div>
+        
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '0.75rem', 
+              fontSize: '0.75rem', 
+              fontWeight: 700, 
+              color: 'var(--text-secondary)', 
+              textTransform: 'uppercase', 
+              letterSpacing: '0.1em' 
+            }}>Email Address</label>
             <input 
               type="email" 
               required
               value={email}
               onChange={e => { setEmail(e.target.value); setError(''); }}
               placeholder="name@hashouttech.com"
-              style={{ width: '100%', padding: '0.875rem', background: 'var(--bg-base)', border: '1.5px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 'var(--radius-md)', outline: 'none', transition: 'all 0.2s', fontSize: '1rem' }}
-              onFocus={e => { e.target.style.borderColor = 'var(--accent-primary)'; e.target.style.boxShadow = '0 0 0 4px rgba(240, 78, 35, 0.1)'; }}
-              onBlur={e => { e.target.style.borderColor = 'var(--border-color)'; e.target.style.boxShadow = 'none'; }}
+              style={{ 
+                width: '100%', 
+                padding: '1rem', 
+                background: 'rgba(255,255,255,0.05)', 
+                border: '1px solid var(--border-color)', 
+                color: '#fff', 
+                borderRadius: 'var(--radius-md)', 
+                outline: 'none', 
+                transition: 'var(--transition)', 
+                fontSize: '1rem' 
+              }}
+              onFocus={e => { 
+                e.target.style.borderColor = 'var(--brand-orange)'; 
+                e.target.style.background = 'rgba(255,255,255,0.08)';
+              }}
+              onBlur={e => { 
+                e.target.style.borderColor = 'var(--border-color)'; 
+                e.target.style.background = 'rgba(255,255,255,0.05)';
+              }}
             />
           </div>
           
           {error && (
-            <div style={{ display: 'flex', gap: '0.5rem', color: 'var(--priority-high)', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.05)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
-               <span>⚠️</span> {error}
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.75rem', 
+              color: '#fca5a5', 
+              fontSize: '0.85rem', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              padding: '1rem', 
+              borderRadius: 'var(--radius-md)', 
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              lineHeight: 1.4
+            }}>
+               <span style={{ flexShrink: 0 }}>⚠️</span> {error}
             </div>
           )}
           
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.875rem', marginTop: '0.5rem', fontSize: '1rem' }} disabled={loading}>
+          <button 
+            type="submit" 
+            className="btn btn-primary" 
+            style={{ 
+              width: '100%', 
+              padding: '1rem', 
+              marginTop: '0.5rem', 
+              fontSize: '1.1rem',
+              height: '54px'
+            }} 
+            disabled={loading}
+          >
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 
-        <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color-light)', textAlign: 'center' }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Strictly for <strong>hashouttech.com</strong> authorized users only.
+        <div style={{ 
+          marginTop: '3.5rem', 
+          paddingTop: '2rem', 
+          borderTop: '1px solid rgba(255,255,255,0.05)', 
+          textAlign: 'center' 
+        }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+            Strictly for <strong style={{ color: 'var(--brand-orange)' }}>hashouttech.com</strong> authorized users only.
           </p>
         </div>
       </div>
