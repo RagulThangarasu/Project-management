@@ -10,7 +10,8 @@ export const AcceptInvite = () => {
     const token = params.get('token');
 
     if (email && token) {
-      fetch(`http://localhost:3001/api/invites/verify?email=${encodeURIComponent(email)}&token=${token}`)
+      const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
+      fetch(`${API_BASE}/invites/verify?email=${encodeURIComponent(email)}&token=${token}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
