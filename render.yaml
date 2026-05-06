@@ -1,0 +1,31 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: hashout-jira-backend
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: SMTP_USER
+        sync: false # You will enter this in the Render UI
+      - key: SMTP_PASS
+        sync: false # You will enter this in the Render UI
+      - key: NODE_VERSION
+        value: 18
+
+  # Frontend Static Site
+  - type: static
+    name: hashout-jira-portal
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://hashout-jira-backend.onrender.com/api # Replace with your actual backend URL if different
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
