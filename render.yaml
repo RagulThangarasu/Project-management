@@ -1,5 +1,4 @@
 services:
-  # Backend Web Service
   - type: web
     name: hashout-jira-backend
     env: node
@@ -12,20 +11,11 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
-      - key: NODE_VERSION
-        value: 18
 
-  # Frontend Static Site
-  - type: web
+  - type: static
     name: hashout-jira-portal
-    env: static
-    plan: free
     buildCommand: npm install && npm run build
-    staticPublishDir: dist # Correct field for 'env: static'
+    publishDir: dist
     envVars:
       - key: VITE_API_URL
         value: https://hashout-jira-backend.onrender.com/api
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
