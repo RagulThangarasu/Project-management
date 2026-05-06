@@ -9,14 +9,14 @@ services:
     startCommand: node server.js
     envVars:
       - key: SMTP_USER
-        sync: false # You will enter this in the Render UI
+        sync: false
       - key: SMTP_PASS
-        sync: false # You will enter this in the Render UI
+        sync: false
       - key: NODE_VERSION
         value: 18
 
   # Frontend Static Site
-  - type: static
+  - type: web
     name: hashout-jira-portal
     env: static
     plan: free
@@ -24,7 +24,7 @@ services:
     publishDir: dist
     envVars:
       - key: VITE_API_URL
-        value: https://hashout-jira-backend.onrender.com/api # Replace with your actual backend URL if different
+        value: https://hashout-jira-backend.onrender.com/api
     routes:
       - type: rewrite
         source: /*
