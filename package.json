@@ -2,10 +2,13 @@
   "name": "project-management",
   "private": true,
   "version": "0.0.0",
+  "homepage": "https://RagulThangarasu.github.io/Project-management",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"cd server && node server.js\"",
-    "build": "tsc -b && vite build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,6 +26,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "concurrently": "^9.2.1",
+    "gh-pages": "^6.3.0",
     "typescript": "^5.5.3",
     "vite": "^5.4.1"
   }
