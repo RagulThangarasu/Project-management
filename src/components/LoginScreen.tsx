@@ -25,7 +25,7 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
     try {
       // Check for invites first (unless it's the admin)
       if (cleanEmail !== 'ragul.thangarasu@hashouttech.com') {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
         const inviteResponse = await fetch(`${API_BASE}/invites`);
         const invitedUsers: {email: string, status: string}[] = await inviteResponse.json();
         const userInvite = invitedUsers.find(i => i.email === cleanEmail);
@@ -61,7 +61,7 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
             role: cleanEmail === 'ragul.thangarasu@hashouttech.com' ? 'admin' : 'member'
           };
           
-          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+          const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
           await fetch(`${API_BASE}/users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -75,7 +75,7 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
       // Ensure this specific user is always an admin, even if previously saved as a member
       if (user && cleanEmail === 'ragul.thangarasu@hashouttech.com' && user.role !== 'admin') {
         user.role = 'admin';
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
         await fetch(`${API_BASE}/users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -59,7 +59,7 @@ export const DashboardView = ({
     if (currentUser.role !== 'admin') return;
     try {
       setIsLoadingInvites(true);
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
       const res = await fetch(`${API_BASE}/invites`);
       const data = await res.json();
       setInvitedUsers(data);

@@ -51,7 +51,7 @@ function App() {
   const [creatingTaskStatus, setCreatingTaskStatus] = useState<TaskStatus | null>(null);
 
   const handleInviteUser = async (email: string) => {
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
     const res = await fetch(`${API_BASE}/invites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -62,7 +62,7 @@ function App() {
   };
 
   const handleRemoveInvite = async (email: string) => {
-    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
     await fetch(`${API_BASE}/invites/${encodeURIComponent(email)}`, {
       method: 'DELETE'
     });
