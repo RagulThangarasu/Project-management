@@ -16,10 +16,12 @@ services:
         value: 18
 
   # Frontend Static Site
-  - type: static
+  - type: web
     name: hashout-jira-portal
+    env: static
+    plan: free
     buildCommand: npm install && npm run build
-    publishDir: dist
+    staticPublishDir: dist # Correct field for 'env: static'
     envVars:
       - key: VITE_API_URL
         value: https://hashout-jira-backend.onrender.com/api
