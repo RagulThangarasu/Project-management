@@ -137,7 +137,7 @@ app.post('/api/invites', async (req, res) => {
     const acceptLink = `${frontendUrl}/accept-invite?token=${token}&email=${encodeURIComponent(cleanEmail)}`;
 
     const mailOptions = {
-      from: '"Hashout Projects" <noreply@hashouttech.com>',
+      from: `"Hashout Projects" <${process.env.SMTP_USER}>`,
       to: cleanEmail,
       subject: "You've been invited to Hashout Project Management",
       html: `
@@ -151,15 +151,17 @@ app.post('/api/invites', async (req, res) => {
       `
     };
 
-    // We try to send, but won't crash if SMTP is not configured
-    try {
-      await transporter.sendMail(mailOptions);
-    } catch (mailErr) {
-      console.warn('Mail sending failed (SMTP likely not configured):', mailErr.message);
-    }
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("❌ SMTP Error:", error);
+      } else {
+        console.log("✅ Email sent successfully:", info.response);
+      }
+    });
 
-    res.json({ success: true, token }); // Returning token for easy testing
+    res.json({ email: cleanEmail, status: 'pending' });
   } catch (error) {
+    console.error("❌ Invitation API Error:", error);
     res.status(500).json({ error: error.message });
   }
 });
