@@ -1,7 +1,7 @@
 import type { Task, User, TaskStatus } from '../types';
 import { mockTaskLists } from '../data';
 import { Trash2, ChevronRight, Edit, Trash } from 'lucide-react';
-import { FixedSizeList as List } from 'react-window';
+import { FixedSizeList } from 'react-window';
 import { Dropdown } from './ui/Dropdown';
 import { Tooltip } from './ui/Tooltip';
 
@@ -109,14 +109,14 @@ export const TaskListView = ({ tasks, updateTask, deleteTask, currentUser, onTas
             </div>
 
             <div style={{ flex: 1 }}>
-              <List
+              <FixedSizeList
                 height={Math.min(listTasks.length * 64, 400)}
                 itemCount={listTasks.length}
                 itemSize={64}
                 width="100%"
               >
                 {Row}
-              </List>
+              </FixedSizeList>
             </div>
           </div>
         );
