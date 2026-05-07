@@ -26,7 +26,7 @@ export type Sprint = {
   name: string;
 };
 
-export type TaskStatus = 'backlog' | 'open' | 'in_progress' | 'in_review' | 'closed';
+export type TaskStatus = 'backlog' | 'open' | 'in_progress' | 'in_review' | 'closed' | 'duplicate';
 export type TaskPriority = 'low' | 'medium' | 'high';
 export type TaskType = 'story' | 'bug' | 'task';
 

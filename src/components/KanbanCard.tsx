@@ -53,17 +53,17 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className="glass-card animate-fade-in"
       style={{
         ...style,
         padding: '1rem',
         borderRadius: 'var(--radius-md)',
-        background: 'rgba(255, 255, 255, 0.05)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'rgba(255, 255, 255, 0.1)',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.75rem',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.35)',
       }}
       onPointerDown={(e) => {
         pointerStartRef.current = { x: e.clientX, y: e.clientY };
@@ -132,18 +132,29 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{task.id}</span>
-          {task.sprintId && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--brand-orange)', fontWeight: 600 }}>
-              ★ {sprints.find(s => s.id === task.sprintId)?.name}
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', opacity: 0.7 }}>{task.id}</span>
+        {task.assignee ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', flexShrink: 0 }}>
+              {task.assignee.avatar}
+            </div>
+            <span style={{
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              color: '#f9a74e',
+              background: 'rgba(249, 167, 78, 0.12)',
+              padding: '2px 8px',
+              borderRadius: '20px',
+              border: '1px solid rgba(249, 167, 78, 0.25)',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.01em'
+            }}>
+              {task.assignee.name}
             </span>
-          )}
-        </div>
-        
-        <div className="avatar" style={{ width: 24, height: 24, fontSize: 10, background: 'var(--brand-purple)', border: '1px solid var(--border-color)' }}>
-          {task.assignee ? task.assignee.avatar : '?'}
-        </div>
+          </div>
+        ) : (
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Unassigned</span>
+        )}
       </div>
     </div>
   );

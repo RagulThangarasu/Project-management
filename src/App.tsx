@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown } from 'lucide-react';
+import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2 } from 'lucide-react';
 import { mockUsers, mockProjects, mockTaskLists, initialTasks, initialTimeLogs } from './data';
 import { api } from './api';
 import type { Task, User, Project, TimeLog, TaskStatus, TaskList, Sprint } from './types';
@@ -14,6 +14,7 @@ import { TaskModal } from './components/TaskModal';
 import { CreateTaskModal } from './components/CreateTaskModal';
 import { CustomSelect } from './components/CustomSelect';
 import { ExcelView } from './components/ExcelView';
+import { MetricsView } from './components/MetricsView';
 import { LoginScreen } from './components/LoginScreen';
 import { AcceptInvite } from './components/AcceptInvite';
 
@@ -38,7 +39,7 @@ function App() {
     ? mockProjects.filter(p => currentUser.role === 'admin' || p.members.includes(currentUser.id)) 
     : mockProjects;
   const [activeProject, setActiveProject] = useState<Project>(visibleProjects[0]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'backlog' | 'board' | 'list' | 'timesheet' | 'excel'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'backlog' | 'board' | 'list' | 'timesheet' | 'excel' | 'metrics'>('dashboard');
   const [activeSprintId, setActiveSprintId] = useState<string | 'all'>('all');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
@@ -73,8 +74,22 @@ function App() {
   
   useEffect(() => {
     const loadData = async () => {
+      // Use a timeout so we never hang forever if the backend is cold/down
+      const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 5000));
+
       try {
-        let data = await api.getData();
+        const result = await Promise.race([
+          api.getData(),
+          timeout
+        ]);
+
+        // If timeout won (result === null), fall back to local data
+        if (!result) {
+          throw new Error('Backend timeout – using local data');
+        }
+
+        let data = result as any;
+
         if (data.tasks.length === 0 && data.sprints.length === 0) {
           const defaultSprints = mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' }));
           await api.seedData({ tasks: initialTasks, sprints: defaultSprints, taskLists: mockTaskLists, timeLogs: initialTimeLogs, users: mockUsers });
@@ -83,24 +98,25 @@ function App() {
           await api.seedData({ users: mockUsers });
           data = await api.getData();
         }
+
         const hashoutUsers = (data.users || []).filter((u: User) => u.email);
-        setUsers(hashoutUsers);
-        setTasks(data.tasks || []);
-        setSprints(data.sprints || []);
-        setTaskLists(data.taskLists || []);
-        setTimeLogs(data.timeLogs || []);
-        
+        setUsers(hashoutUsers.length > 0 ? hashoutUsers : mockUsers);
+        setTasks(data.tasks || initialTasks);
+        setSprints(data.sprints || mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
+        setTaskLists(data.taskLists || mockTaskLists);
+        setTimeLogs(data.timeLogs || initialTimeLogs);
+
         const firstProjectId = mockProjects[0]?.id;
         const first = data.sprints.find((s: Sprint) => s.projectId === firstProjectId);
         if (first) setActiveSprintId(first.id);
-        
-        setIsLoaded(true);
       } catch (err) {
-        console.error('Failed to load data', err);
+        console.warn('Backend unavailable – loading local data:', err);
+        setUsers(mockUsers);
         setTasks(initialTasks);
         setSprints(mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
         setTaskLists(mockTaskLists);
         setTimeLogs(initialTimeLogs);
+      } finally {
         setIsLoaded(true);
       }
     };
@@ -197,7 +213,33 @@ function App() {
     return t.sprintId === activeSprintId;
   });
 
-  if (!isLoaded) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Workspace...</div>;
+  if (!isLoaded) return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'var(--bg-base)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      gap: '2rem'
+    }}>
+      {/* Animated ring */}
+      <div style={{ position: 'relative', width: '80px', height: '80px' }}>
+        <svg style={{ animation: 'spin 1.2s linear infinite', width: '80px', height: '80px' }}>
+          <circle cx="40" cy="40" r="30" fill="transparent" stroke="rgba(255,255,255,0.05)" strokeWidth="6"/>
+          <circle cx="40" cy="40" r="30" fill="transparent" stroke="var(--brand-orange)" strokeWidth="6"
+            strokeDasharray="60 130" strokeLinecap="round"/>
+        </svg>
+        <img
+          src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg"
+          alt="Hashout"
+          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '36px', filter: 'brightness(0) invert(1)' }}
+        />
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>Loading Workspace</div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Connecting to Hashout intelligence…</div>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
 
   const isAcceptingInvite = window.location.pathname === '/accept-invite';
 
@@ -213,9 +255,8 @@ function App() {
     <div className="app-layout">
       {/* Sidebar */}
       <aside className="sidebar" style={{ background: 'rgba(58, 29, 93, 0.3)', borderRight: '1px solid var(--border-color)', backdropFilter: 'blur(10px)' }}>
-        <div className="sidebar-header" style={{ padding: '2rem 1.5rem', borderBottom: '1px solid var(--border-color-light)', marginBottom: '1rem' }}>
-          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '32px' }} />
-          <div style={{ fontSize: '0.65rem', color: 'var(--brand-orange)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', marginTop: '6px' }}>Project Intelligence</div>
+        <div className="sidebar-header" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color-light)', marginBottom: '1rem' }}>
+          <div style={{ fontSize: '1rem', color: 'var(--brand-orange)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left' }}>Project Intelligence</div>
         </div>
         <nav className="sidebar-nav">
           <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
@@ -238,6 +279,9 @@ function App() {
           </div>
           <div className={`nav-item ${activeTab === 'excel' ? 'active' : ''}`} onClick={() => setActiveTab('excel')}>
             <FileText size={18} /> Excel View
+          </div>
+          <div className={`nav-item ${activeTab === 'metrics' ? 'active' : ''}`} onClick={() => setActiveTab('metrics')}>
+            <BarChart2 size={18} /> Metrics
           </div>
           <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem', marginTop: 'auto' }}>
             <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: '0.5rem', padding: '0 0.25rem' }}>TASK LISTS</div>
@@ -396,20 +440,50 @@ function App() {
               </button>
               {isProjectMenuOpen && (
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setIsProjectMenuOpen(false)} />
-                  <div className="menu-dropdown" style={{ left: 0, top: '100%', marginTop: '0.25rem', minWidth: 220, zIndex: 50 }}>
-                    <div style={{ padding: '4px 8px', fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)' }}>Switch Project</div>
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setIsProjectMenuOpen(false)} />
+                  <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 'calc(100% + 8px)',
+                    minWidth: '220px',
+                    background: '#1a1030',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '12px',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                    zIndex: 100,
+                    overflow: 'hidden',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                  }}>
+                    <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Switch Project
+                      </div>
+                    </div>
                     {visibleProjects.map(p => (
                       <button
                         key={p.id}
-                        className="menu-item"
                         style={{
-                          fontWeight: p.id === activeProject.id ? 600 : 400,
-                          color: p.id === activeProject.id ? 'var(--accent-primary)' : undefined
+                          width: '100%',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          padding: '0.75rem 1rem',
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          fontWeight: p.id === activeProject.id ? 700 : 500,
+                          color: p.id === activeProject.id ? 'var(--brand-orange)' : 'rgba(255,255,255,0.8)',
+                          transition: 'background 0.15s',
+                          textAlign: 'left',
                         }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         onClick={() => { setActiveProject(p); setIsProjectMenuOpen(false); }}
                       >
-                        {p.name} {p.id === activeProject.id ? ' ✓' : ''}
+                        {p.name}
+                        {p.id === activeProject.id && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--brand-orange)' }}>✓</span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -498,6 +572,12 @@ function App() {
               timeLogs={timeLogs} 
               onTaskClick={setSelectedTaskId} 
               onDeleteTasks={deleteTasks}
+            />
+          )}
+          {activeTab === 'metrics' && (
+            <MetricsView 
+              tasks={filteredTasks} 
+              users={users} 
             />
           )}
           {activeTab === 'timesheet' && (

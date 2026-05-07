@@ -27,13 +27,12 @@ export const CustomSelect = ({ label, value, options, onChange, placeholder, var
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const isWhiteCard = variant === 'white-card';
-  const isForm = variant === 'form';
+  const isGhost = variant === 'ghost';
 
   return (
     <div style={{ position: 'relative', ...style }} ref={containerRef}>
       {label && (
-        <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           {label}
         </label>
       ) }
@@ -41,25 +40,26 @@ export const CustomSelect = ({ label, value, options, onChange, placeholder, var
         onClick={() => setIsOpen(!isOpen)}
         style={{
           width: '100%',
-          padding: isWhiteCard ? '0.75rem' : isForm ? '0.6rem' : '0.25rem 0.5rem',
-          background: isWhiteCard ? '#ffffff' : isForm ? 'var(--bg-base)' : 'transparent',
-          border: isWhiteCard ? '1px solid #e2e8f0' : isForm ? '1px solid var(--border-color)' : 'none',
-          color: isWhiteCard ? '#1a202c' : 'var(--text-primary)',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '14px',
-          fontWeight: isWhiteCard || isForm ? 400 : 500,
-          boxShadow: isWhiteCard ? '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)' : 'none',
+          padding: isGhost ? '0.25rem 0.5rem' : '0.6rem 1rem',
+          background: isGhost ? 'transparent' : '#ffffff',
+          border: isGhost ? 'none' : `1px solid ${isOpen ? 'var(--brand-orange)' : '#e2e8f0'}`,
+          color: isGhost ? '#fff' : '#1a202c',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          fontWeight: 500,
+          boxShadow: isOpen && !isGhost ? '0 0 0 3px rgba(240, 72, 29, 0.15)' : 'none',
           cursor: 'pointer',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          minHeight: isWhiteCard ? '44px' : 'auto'
+          transition: 'all 0.2s ease',
+          minHeight: isGhost ? 'auto' : '44px'
         }}
       >
-        <span style={{ color: selectedOption ? (isWhiteCard ? '#1a202c' : 'inherit') : 'var(--text-muted)' }}>
+        <span style={{ color: selectedOption ? (isGhost ? '#fff' : '#1a202c') : (isGhost ? 'rgba(255,255,255,0.3)' : '#a0aec0') }}>
           {selectedOption ? selectedOption.name : placeholder}
         </span>
-        <ChevronDown size={isWhiteCard ? 16 : 14} color={isWhiteCard ? '#718096' : 'var(--text-muted)'} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', marginLeft: '0.5rem' }} />
+        <ChevronDown size={16} color={isGhost ? "var(--text-muted)" : "#718096"} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', marginLeft: '0.5rem' }} />
       </div>
 
       {isOpen && (
@@ -67,18 +67,18 @@ export const CustomSelect = ({ label, value, options, onChange, placeholder, var
           position: 'absolute',
           top: 'calc(100% + 4px)',
           left: 0,
-          right: variant === 'ghost' ? 'auto' : 0,
-          minWidth: variant === 'ghost' ? '160px' : '100%',
-          background: isForm ? 'var(--bg-surface)' : '#ffffff',
-          border: isForm ? '1px solid var(--border-color)' : '1px solid #e2e8f0',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
-          zIndex: 1100,
-          maxHeight: maxHeight ? `${maxHeight}px` : '200px',
+          right: isGhost ? 'auto' : 0,
+          minWidth: isGhost ? '160px' : '100%',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.4)',
+          zIndex: 9999, /* High z-index to avoid overlapping */
+          maxHeight: maxHeight ? `${maxHeight}px` : '220px',
           overflowY: 'auto'
         }}>
           {options.length === 0 ? (
-            <div style={{ padding: '0.75rem', fontSize: '14px', color: '#a0aec0', textAlign: 'center' }}>No options</div>
+            <div style={{ padding: '0.75rem', fontSize: '0.9rem', color: '#a0aec0', textAlign: 'center' }}>No options</div>
           ) : (
             options.map(opt => (
               <div
@@ -88,15 +88,20 @@ export const CustomSelect = ({ label, value, options, onChange, placeholder, var
                   setIsOpen(false);
                 }}
                 style={{
-                  padding: '0.75rem',
-                  fontSize: '14px',
-                  color: isForm ? 'var(--text-primary)' : '#1a202c',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.9rem',
+                  color: value === opt.id ? 'var(--brand-orange)' : '#1a202c',
                   cursor: 'pointer',
-                  background: value === opt.id ? (isForm ? 'var(--bg-surface-hover)' : '#f7fafc') : 'transparent',
+                  fontWeight: value === opt.id ? 700 : 500,
+                  background: value === opt.id ? 'rgba(240, 72, 29, 0.08)' : 'transparent',
                   transition: 'background 0.2s'
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = isForm ? 'var(--bg-surface-hover)' : '#edf2f7')}
-                onMouseLeave={e => (e.currentTarget.style.background = value === opt.id ? (isForm ? 'var(--bg-surface-hover)' : '#f7fafc') : 'transparent')}
+                onMouseEnter={e => {
+                  if (value !== opt.id) e.currentTarget.style.background = '#f7fafc';
+                }}
+                onMouseLeave={e => {
+                  if (value !== opt.id) e.currentTarget.style.background = 'transparent';
+                }}
               >
                 {opt.name}
               </div>

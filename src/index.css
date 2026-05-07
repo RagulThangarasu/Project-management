@@ -239,3 +239,43 @@ body {
 .brand-logo span {
   color: var(--brand-orange);
 }
+
+/* ─── Global Form Fields ─────────────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="number"],
+input[type="date"],
+input[type="password"],
+input[type="search"],
+select,
+textarea {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #1a202c;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="password"]:focus,
+input[type="search"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--brand-orange);
+  box-shadow: 0 0 0 3px rgba(240, 72, 29, 0.15);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #a0aec0;
+}
+
+select option {
+  background: #ffffff;
+  color: #1a202c;
+}

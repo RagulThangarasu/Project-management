@@ -194,62 +194,56 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
               <CustomSelect 
                 label="Status"
                 value={editedTask.status}
-                disabled={!canEdit}
                 onChange={val => setEditedTask(prev => ({ ...prev, status: val as Task['status'] }))}
                 options={[
-                  { value: 'backlog', label: 'Backlog' },
-                  { value: 'open', label: 'Open' },
-                  { value: 'in_progress', label: 'In Progress' },
-                  { value: 'in_review', label: 'In Review' },
-                  { value: 'closed', label: 'Closed' }
+                  { id: 'backlog', name: 'Backlog' },
+                  { id: 'open', name: 'Open' },
+                  { id: 'in_progress', name: 'In Progress' },
+                  { id: 'in_review', name: 'In Review' },
+                  { id: 'closed', name: 'Closed' }
                 ]}
               />
 
               <CustomSelect 
                 label="Priority"
                 value={editedTask.priority}
-                disabled={!canEdit}
                 onChange={val => setEditedTask(prev => ({ ...prev, priority: val as Task['priority'] }))}
                 options={[
-                  { value: 'low', label: 'Low' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'high', label: 'High' }
+                  { id: 'low', name: 'Low' },
+                  { id: 'medium', name: 'Medium' },
+                  { id: 'high', name: 'High' }
                 ]}
               />
 
               <CustomSelect 
                 label="Type"
                 value={editedTask.type || 'task'}
-                disabled={!canEdit}
                 onChange={val => setEditedTask(prev => ({ ...prev, type: val as Task['type'] }))}
                 options={[
-                  { value: 'task', label: 'Task' },
-                  { value: 'story', label: 'Story' },
-                  { value: 'bug', label: 'Bug' }
+                  { id: 'task', name: 'Task' },
+                  { id: 'story', name: 'Story' },
+                  { id: 'bug', name: 'Bug' }
                 ]}
               />
 
               <CustomSelect 
                 label="Sprint"
                 value={editedTask.sprintId || (sprints[0]?.id ?? '')}
-                disabled={!canEdit}
                 onChange={val => setEditedTask(prev => ({ 
                   ...prev, 
                   sprintId: val,
-                  // Track where it came from if sprint is being changed
                   previousSprintId: (task.sprintId || sprints[0]?.id) !== val
                     ? (task.sprintId || sprints[0]?.id)
                     : prev.previousSprintId
                 }))}
-                options={sprints.map(s => ({ value: s.id, label: s.name }))}
+                options={sprints.map(s => ({ id: s.id, name: s.name }))}
               />
 
               <CustomSelect 
                 label="Task List"
                 value={editedTask.taskListId}
-                disabled={!canEdit}
                 onChange={val => setEditedTask(prev => ({ ...prev, taskListId: val }))}
-                options={taskLists.map(tl => ({ value: tl.id, label: tl.name }))}
+                options={taskLists.map(tl => ({ id: tl.id, name: tl.name }))}
               />
 
               <div>
@@ -260,9 +254,8 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
                   value={editedTask.componentName || ''}
                   onChange={e => setEditedTask(prev => ({ ...prev, componentName: e.target.value }))}
                   style={{ 
-                    width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-surface)', 
-                    border: '1px solid var(--border-color)', color: 'var(--text-primary)', 
-                    borderRadius: 'var(--radius-md)', fontSize: '0.875rem', outline: 'none'
+                    width: '100%', padding: '0.5rem 0.75rem',
+                    borderRadius: 'var(--radius-md)', fontSize: '0.875rem'
                   }}
                   placeholder="E.g., Sidebar"
                 />
@@ -276,9 +269,8 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
                   value={editedTask.estimatedTime || ''}
                   onChange={e => setEditedTask(prev => ({ ...prev, estimatedTime: e.target.value }))}
                   style={{ 
-                    width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-surface)', 
-                    border: '1px solid var(--border-color)', color: 'var(--text-primary)', 
-                    borderRadius: 'var(--radius-md)', fontSize: '0.875rem', outline: 'none'
+                    width: '100%', padding: '0.5rem 0.75rem',
+                    borderRadius: 'var(--radius-md)', fontSize: '0.875rem'
                   }}
                   placeholder="E.g., 4h"
                 />
@@ -295,8 +287,8 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
                       setEditedTask(prev => ({ ...prev, assignee: user }));
                     }}
                     options={[
-                      { value: '', label: 'Unassigned' },
-                      ...mockUsers.map(u => ({ value: u.id, label: u.name }))
+                      { id: '', name: 'Unassigned' },
+                      ...mockUsers.map(u => ({ id: u.id, name: u.name }))
                     ]}
                   />
                 ) : (
