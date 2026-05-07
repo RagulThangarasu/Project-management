@@ -17,6 +17,9 @@ import { ExcelView } from './components/ExcelView';
 import { MetricsView } from './components/MetricsView';
 import { LoginScreen } from './components/LoginScreen';
 import { AcceptInvite } from './components/AcceptInvite';
+import { supabase } from './lib/supabase';
+import { Dropdown } from './components/ui/Dropdown';
+import { Tooltip } from './components/ui/Tooltip';
 
 function App() {
   const [users, setUsers] = useState<User[]>([]);
@@ -74,6 +77,10 @@ function App() {
   
   useEffect(() => {
     const loadData = async () => {
+      // Example of how to fetch from Supabase
+      // const { data: sbTasks } = await supabase.from('tasks').select('*');
+      // if (sbTasks) setTasks(sbTasks);
+
       // Use a timeout so we never hang forever if the backend is cold/down
       const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 5000));
 
@@ -335,85 +342,43 @@ function App() {
 
         {/* User Profile Logon - Persistent at Bottom */}
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color-light)', padding: '1.25rem', position: 'relative' }}>
-          <div 
-            onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            style={{ 
-              background: 'rgba(255,255,255,0.05)', 
-              borderRadius: 'var(--radius-lg)', 
-              padding: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.875rem',
-              cursor: 'pointer',
-              border: '1px solid transparent',
-              transition: 'var(--transition)'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
-              e.currentTarget.style.borderColor = 'var(--brand-orange)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-              e.currentTarget.style.borderColor = 'transparent';
-            }}
-          >
-            <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.9rem', background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', color: '#fff', border: 'none', boxShadow: '0 4px 12px rgba(240,72,29,0.3)' }}>
-              {currentUser.avatar}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {currentUser.name}
-              </span>
-              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {currentUser.role}
-              </span>
-            </div>
+          <div style={{ 
+            background: 'rgba(255,255,255,0.05)', 
+            borderRadius: 'var(--radius-lg)', 
+            padding: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.875rem',
+            cursor: 'pointer',
+            border: '1px solid transparent',
+            transition: 'var(--transition)'
+          }}>
+            <Dropdown
+              trigger={
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', width: '100%' }}>
+                  <div className="avatar" style={{ width: 36, height: 36, fontSize: '0.9rem', background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', color: '#fff', border: 'none', boxShadow: '0 4px 12px rgba(240,72,29,0.3)' }}>
+                    {currentUser.avatar}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {currentUser.name}
+                    </span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {currentUser.role}
+                    </span>
+                  </div>
+                </div>
+              }
+              items={[
+                ...users.filter(u => u.id !== currentUser.id).map(u => ({
+                  label: `Switch to ${u.name}`,
+                  onClick: () => handleLogin(u)
+                })),
+                { label: 'Sign Out', onClick: handleLogout, variant: 'danger' }
+              ]}
+            />
           </div>
 
-          {isProfileMenuOpen && (
-            <div 
-              style={{ 
-                position: 'absolute', 
-                bottom: 'calc(100% + 0.5rem)', 
-                left: '1rem', 
-                right: '1rem', 
-                background: '#1F2937', 
-                border: '1px solid rgba(255,255,255,0.1)', 
-                borderRadius: 'var(--radius-md)', 
-                boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-                padding: '0.5rem 0',
-                zIndex: 100
-              }}
-            >
-              <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.25rem' }}>
-                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.05em' }}>SWITCH USER</div>
-              </div>
-              <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                {users.filter(u => u.id !== currentUser.id).map(u => (
-                  <button 
-                    key={u.id} 
-                    className="menu-item" 
-                    style={{ color: 'rgba(255,255,255,0.7)', padding: '0.5rem 1rem' }} 
-                    onClick={() => { handleLogin(u); setIsProfileMenuOpen(false); }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    {u.name}
-                  </button>
-                ))}
-              </div>
-              <div style={{ margin: '4px 0', height: 1, background: 'rgba(255,255,255,0.05)' }} />
-              <button 
-                className="menu-item" 
-                style={{ color: '#ef4444', padding: '0.5rem 1rem' }} 
-                onClick={() => { handleLogout(); setIsProfileMenuOpen(false); }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                Sign Out
-              </button>
-            </div>
-          )}
         </div>
       </aside>
 
@@ -423,74 +388,29 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {/* Project Name + Dropdown Switcher */}
             <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.5rem',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)',
-                  padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-md)',
-                  transition: 'background var(--transition-fast)'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                {activeProject.name}
-                <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />
-              </button>
-              {isProjectMenuOpen && (
-                <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setIsProjectMenuOpen(false)} />
-                  <div style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 'calc(100% + 8px)',
-                    minWidth: '220px',
-                    background: '#1a1030',
-                    border: '1px solid rgba(255,255,255,0.12)',
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
-                    zIndex: 100,
-                    overflow: 'hidden',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                  }}>
-                    <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        Switch Project
-                      </div>
-                    </div>
-                    {visibleProjects.map(p => (
-                      <button
-                        key={p.id}
-                        style={{
-                          width: '100%',
-                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '0.75rem 1rem',
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontSize: '0.9rem',
-                          fontWeight: p.id === activeProject.id ? 700 : 500,
-                          color: p.id === activeProject.id ? 'var(--brand-orange)' : 'rgba(255,255,255,0.8)',
-                          transition: 'background 0.15s',
-                          textAlign: 'left',
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        onClick={() => { setActiveProject(p); setIsProjectMenuOpen(false); }}
-                      >
-                        {p.name}
-                        {p.id === activeProject.id && (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--brand-orange)' }}>✓</span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+              <Dropdown
+                trigger={
+                  <button
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.5rem',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)',
+                      padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-md)',
+                      transition: 'background var(--transition-fast)'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {activeProject.name}
+                    <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />
+                  </button>
+                }
+                items={visibleProjects.map(p => ({
+                  label: p.name,
+                  onClick: () => setActiveProject(p)
+                }))}
+              />
             </div>
-
           </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-surface)', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>

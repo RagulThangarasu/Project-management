@@ -64,7 +64,7 @@ export const CreateTaskModal = ({ initialStatus, activeProject, taskLists, sprin
     fontSize: '14px',
     fontWeight: 500,
     marginBottom: '0.5rem',
-    color: 'var(--text-primary)'
+    color: '#1a202c'
   };
 
   return (

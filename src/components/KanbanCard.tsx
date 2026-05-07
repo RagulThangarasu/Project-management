@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MoreHorizontal, MessageSquare, Trash2, GripVertical } from 'lucide-react';
+import { MoreHorizontal, MessageSquare, Trash2, GripVertical, Edit, Trash } from 'lucide-react';
 import type { Task, User, TaskStatus, Sprint } from '../types';
 import { mockUsers } from '../data';
+import { Dropdown } from './ui/Dropdown';
+import { Tooltip } from './ui/Tooltip';
 
 interface KanbanCardProps {
   task: Task;
@@ -15,7 +17,6 @@ interface KanbanCardProps {
 }
 
 export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskClick, sprints }: KanbanCardProps) => {
-  const [showMenu, setShowMenu] = useState(false);
   const [showAssigneeMenu, setShowAssigneeMenu] = useState(false);
 
   // Track whether the pointer moved enough to count as a drag (≥8px)
@@ -30,7 +31,7 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    zIndex: isDragging ? 999 : (showMenu || showAssigneeMenu) ? 50 : 1,
+    zIndex: isDragging ? 999 : showAssigneeMenu ? 50 : 1,
     position: 'relative' as const,
   };
 
@@ -80,7 +81,7 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
       }}
       onClick={() => {
         if (didDragRef.current) return;      // dragged — skip modal
-        if (showMenu || showAssigneeMenu) return;
+        if (showAssigneeMenu) return;
         onTaskClick(task.id);
       }}
       {...attributes}
@@ -88,42 +89,26 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
       {/* Top row: drag handle + tags + menu */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span
-            {...listeners}
-            style={{ cursor: 'grab', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', touchAction: 'none' }}
-            title="Drag to move"
-            onClick={e => e.stopPropagation()}
-          >
-            <GripVertical size={14} />
-          </span>
+          <Tooltip content="Drag to reorder">
+            <span
+              {...listeners}
+              style={{ cursor: 'grab', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', touchAction: 'none' }}
+              onClick={e => e.stopPropagation()}
+            >
+              <GripVertical size={14} />
+            </span>
+          </Tooltip>
 
           <span className={`tag tag-priority-${task.priority}`} style={{ borderRadius: '4px' }}>{task.priority}</span>
         </div>
 
-        <div className="menu-container" style={{ position: 'relative' }} onPointerDown={e => e.stopPropagation()}>
-          <button
-            className="btn-icon"
-            style={{ padding: '2px', background: 'transparent' }}
-            onClick={e => { e.stopPropagation(); setShowMenu(!showMenu); }}
-          >
-            <MoreHorizontal size={16} />
-          </button>
-
-          {showMenu && (
-            <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onPointerDown={() => setShowMenu(false)} />
-              <div className="glass" style={{ position: 'absolute', top: '100%', right: 0, width: '180px', background: 'rgba(31, 41, 55, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: '0.5rem', zIndex: 50, boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
-                <div style={{ padding: '4px 8px', fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</div>
-                <button
-                  className="menu-item"
-                  style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', color: '#fff', padding: '0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
-                  onClick={e => { e.stopPropagation(); deleteTask(task.id); }}
-                >
-                  Delete Task
-                </button>
-              </div>
-            </>
-          )}
+        <div className="menu-container" onPointerDown={e => e.stopPropagation()}>
+          <Dropdown 
+            items={[
+              { label: 'Edit Details', onClick: () => onTaskClick(task.id), icon: <Edit size={14}/> },
+              { label: 'Delete Task', onClick: () => deleteTask(task.id), icon: <Trash size={14}/>, variant: 'danger' }
+            ]} 
+          />
         </div>
       </div>
 

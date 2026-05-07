@@ -145,10 +145,10 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
                 readOnly={!canEdit}
                 placeholder="Add a detailed description..."
                 style={{ 
-                  background: 'var(--bg-base)', 
-                  color: 'var(--text-primary)', 
+                  background: '#f8fafc', 
+                  color: '#1e293b', 
                   opacity: canEdit ? 1 : 0.7,
-                  border: '1px solid var(--border-color)',
+                  border: '1px solid #e2e8f0',
                   borderRadius: 'var(--radius-md)'
                 }}
               />
@@ -160,7 +160,7 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
               </h3>
               
               {editedTask.imageUrl && (
-                <div style={{ marginBottom: '1rem', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-surface-hover)', display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ marginBottom: '1rem', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'center', padding: '1rem' }}>
                   <img src={editedTask.imageUrl} alt="Task Attachment" style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }} />
                 </div>
               )}
@@ -177,7 +177,7 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
                   <label 
                     htmlFor={`upload-${task.id}`} 
                     className="btn btn-secondary" 
-                    style={{ width: '100%', display: 'flex', justifyContent: 'center', borderStyle: 'dashed', opacity: isUploading ? 0.5 : 1, background: 'var(--bg-surface-hover)', padding: '0.75rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', border: '1px dashed var(--border-color)' }}
+                    style={{ width: '100%', display: 'flex', justifyContent: 'center', borderStyle: 'dashed', opacity: isUploading ? 0.5 : 1, background: '#f8fafc', padding: '0.75rem', borderRadius: 'var(--radius-md)', cursor: 'pointer', border: '1px dashed #cbd5e1', color: '#475569' }}
                   >
                     <Upload size={16} /> {isUploading ? 'Uploading...' : editedTask.imageUrl ? 'Replace Image' : 'Upload Image'}
                   </label>
@@ -188,7 +188,7 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
           </div>
 
           {/* Sidebar Area */}
-          <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', background: '#f8fafc', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e2e8f0' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1 }}>
               
               <CustomSelect 

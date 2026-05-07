@@ -245,10 +245,23 @@
 }
 
 .modal-content {
-  background: #16102a;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: var(--radius-lg);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
+  color: #1a202c;
+}
+
+.modal-content h1, 
+.modal-content h2, 
+.modal-content h3, 
+.modal-content label {
+  color: #1a202c;
+}
+
+.modal-content .text-muted,
+.modal-content span {
+  color: #4a5568;
 }
 
 @keyframes slideIn {
