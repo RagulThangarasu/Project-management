@@ -20,26 +20,43 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
       setError('Only @hashouttech.com outlook domain users can access this application.');
       return;
     }
+
+    const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 5000) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(id);
+        return response;
+      } catch (err) {
+        clearTimeout(id);
+        throw err;
+      }
+    };
     
     setLoading(true);
     try {
       // Check for invites first (unless it's the admin)
       if (cleanEmail !== 'ragul.thangarasu@hashouttech.com') {
-        const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
-        const inviteResponse = await fetch(`${API_BASE}/invites`);
-        const invitedUsers: {email: string, status: string}[] = await inviteResponse.json();
-        const userInvite = invitedUsers.find(i => i.email === cleanEmail);
-        
-        if (!userInvite) {
-          setError('You have not been invited to access this dashboard. Please contact an administrator.');
-          setLoading(false);
-          return;
-        }
+        try {
+          const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
+          const inviteResponse = await fetchWithTimeout(`${API_BASE}/invites`);
+          const invitedUsers: {email: string, status: string}[] = await inviteResponse.json();
+          const userInvite = invitedUsers.find(i => i.email === cleanEmail);
+          
+          if (!userInvite) {
+            setError('You have not been invited to access this dashboard. Please contact an administrator.');
+            setLoading(false);
+            return;
+          }
 
-        if (userInvite.status !== 'accepted') {
-          setError('Your invitation is pending. Please check your inbox and click the accept link to proceed.');
-          setLoading(false);
-          return;
+          if (userInvite.status !== 'accepted') {
+            setError('Your invitation is pending. Please check your inbox and click the accept link to proceed.');
+            setLoading(false);
+            return;
+          }
+        } catch (inviteErr) {
+          console.warn('Invite check failed, proceeding with local fallback:', inviteErr);
         }
       }
 
@@ -61,12 +78,16 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
             role: cleanEmail === 'ragul.thangarasu@hashouttech.com' ? 'admin' : 'member'
           };
           
-          const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
-          await fetch(`${API_BASE}/users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user)
-          });
+          try {
+            const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
+            await fetchWithTimeout(`${API_BASE}/users`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(user)
+            });
+          } catch (postErr) {
+            console.warn('Failed to sync new user to backend:', postErr);
+          }
           
           setUsers(prev => [...prev, user!]);
         }
@@ -117,7 +138,7 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
-          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '50px' }} />
+          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '50px', filter: 'brightness(0) invert(1)' }} />
         </div>
         
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
