@@ -35,7 +35,7 @@ export const AcceptInvite = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-base)', padding: '2rem' }}>
       <div style={{ background: 'var(--bg-surface)', padding: '2.5rem', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', width: '100%', maxWidth: 450, textAlign: 'center' }}>
-        <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '40px', marginBottom: '2rem' }} />
+        <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '40px', marginBottom: '2rem', filter: 'brightness(0) invert(1)' }} />
         
         {status === 'loading' && <p>Verifying your invitation...</p>}
         {status === 'success' && (
