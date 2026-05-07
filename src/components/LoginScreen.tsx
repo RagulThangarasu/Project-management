@@ -15,8 +15,9 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
+    const emailRegex = /^[a-z0-9._%+-]+@hashouttech\.com$/i;
     
-    if (!cleanEmail.endsWith('@hashouttech.com')) {
+    if (!emailRegex.test(cleanEmail)) {
       setError('Only @hashouttech.com outlook domain users can access this application.');
       return;
     }
@@ -150,7 +151,19 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
-          <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style={{ height: '50px', filter: 'invert(1) brightness(10)' }} />
+          <div style={{ 
+            width: '180px', 
+            height: '40px', 
+            backgroundColor: '#ffffff',
+            maskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
+            WebkitMaskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            WebkitMaskPosition: 'center'
+          }} />
         </div>
         
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>

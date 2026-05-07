@@ -235,11 +235,23 @@ function App() {
           <circle cx="40" cy="40" r="30" fill="transparent" stroke="var(--brand-orange)" strokeWidth="6"
             strokeDasharray="60 130" strokeLinecap="round"/>
         </svg>
-        <img
-          src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg"
-          alt="Hashout"
-          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: '36px', filter: 'brightness(0) invert(1)' }}
-        />
+        <div style={{ 
+          position: 'absolute', 
+          top: '50%', 
+          left: '50%', 
+          transform: 'translate(-50%,-50%)', 
+          width: '36px', 
+          height: '36px', 
+          backgroundColor: '#ffffff',
+          maskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
+          WebkitMaskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
+          maskSize: 'contain',
+          WebkitMaskSize: 'contain',
+          maskRepeat: 'no-repeat',
+          WebkitMaskRepeat: 'no-repeat',
+          maskPosition: 'center',
+          WebkitMaskPosition: 'center'
+        }} />
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>Loading Workspace</div>
