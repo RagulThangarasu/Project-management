@@ -1,3 +1,4 @@
+// Build: 2026-05-07T14:40:00Z
 import { useState, useEffect } from 'react';
 import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2 } from 'lucide-react';
 import { mockUsers, mockProjects, mockTaskLists, initialTasks, initialTimeLogs } from './data';
