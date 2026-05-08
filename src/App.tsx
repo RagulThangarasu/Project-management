@@ -354,6 +354,32 @@ function App() {
         <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginBottom: '0.5rem' }}>Loading Workspace</div>
         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Connecting to Hashout intelligence…</div>
       </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', marginTop: '1rem' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', maxWidth: '300px', textAlign: 'center' }}>
+          Server is waking up. This may take a minute.
+        </p>
+        <button 
+          className="btn btn-secondary" 
+          style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}
+          onClick={() => {
+            setIsLoaded(true);
+            setLoadError(null);
+            // Fallback to local data
+            setUsers(mockUsers);
+            setTasks(initialTasks);
+            const loadedProjects = mockProjects;
+            setProjects(loadedProjects);
+            setSprints(loadedProjects.map((p: Project) => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
+            setTaskLists(mockTaskLists);
+            setTimeLogs(initialTimeLogs);
+            setIsBackendWaking(true); 
+          }}
+        >
+          Skip & Use Offline Mode
+        </button>
+      </div>
+
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );

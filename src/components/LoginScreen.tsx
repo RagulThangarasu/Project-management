@@ -58,7 +58,7 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
         name: formattedName,
         email: cleanEmail,
         avatar: nameParts.map((p: string) => p.charAt(0).toUpperCase()).join('').substring(0, 2),
-        role: (cleanEmail === 'ragul.thangarasu@hashouttech.com' || cleanEmail === 'ragul.thnagarasu@hashouttech.com' || cleanEmail === 'ragul.thangarasi@hashouttech.com') ? 'admin' : 'member'
+        role: (cleanEmail === 'ragul.thangarasu@hashouttech.com' || cleanEmail === 'ragul.thangarasi@hashouttech.com') ? 'admin' : 'member'
       };
 
       onLogin(user);
