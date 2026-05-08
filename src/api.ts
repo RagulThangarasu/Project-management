@@ -1,6 +1,6 @@
 import type { Task, Sprint, TaskList, TimeLog } from './types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
 
 export const api = {
   async getData() {

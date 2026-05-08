@@ -28,7 +28,7 @@ export const AdminView = ({ currentUser, onInvite, onRemoveInvite, users }: Admi
 
   const fetchInvites = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
       const res = await fetch(`${API_BASE}/invites`);
       const data = await res.json();
       setInvites(data);
@@ -44,7 +44,7 @@ export const AdminView = ({ currentUser, onInvite, onRemoveInvite, users }: Admi
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/invites`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api'}/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: inviteEmail, role: inviteRole })
