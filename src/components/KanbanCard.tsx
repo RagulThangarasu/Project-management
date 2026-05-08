@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MoreHorizontal, MessageSquare, Trash2, GripVertical, Edit, Trash } from 'lucide-react';
+import { MoreHorizontal, MessageSquare, Trash2, GripVertical, Edit, Trash, User as UserIcon } from 'lucide-react';
 import type { Task, User, TaskStatus, Sprint } from '../types';
 import { mockUsers } from '../data';
 import { Dropdown } from './ui/Dropdown';
@@ -100,13 +100,16 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
           </Tooltip>
 
           <span className={`tag tag-priority-${task.priority}`} style={{ borderRadius: '4px' }}>{task.priority}</span>
+          <span className={`tag tag-type-${task.type}`} style={{ borderRadius: '4px', textTransform: 'capitalize' }}>{task.type}</span>
         </div>
 
         <div className="menu-container" onPointerDown={e => e.stopPropagation()}>
           <Dropdown 
             items={[
               { label: 'Edit Details', onClick: () => onTaskClick(task.id), icon: <Edit size={14}/> },
-              { label: 'Delete Task', onClick: () => deleteTask(task.id), icon: <Trash size={14}/>, variant: 'danger' }
+              ...(currentUser.role === 'admin' ? [
+                { label: `Delete ${task.type.charAt(0).toUpperCase() + task.type.slice(1)}`, onClick: () => deleteTask(task.id), icon: <Trash size={14}/>, variant: 'danger' as const }
+              ] : [])
             ]} 
           />
         </div>
@@ -120,9 +123,6 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
         <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-secondary)', opacity: 0.7 }}>{task.id}</span>
         {task.assignee ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', flexShrink: 0 }}>
-              {task.assignee.avatar}
-            </div>
             <span style={{
               fontSize: '0.72rem',
               fontWeight: 700,
@@ -134,11 +134,15 @@ export const KanbanCard = ({ task, updateTask, deleteTask, currentUser, onTaskCl
               whiteSpace: 'nowrap',
               letterSpacing: '0.01em'
             }}>
-              {task.assignee.name}
+              {task.assignee.name.length > 10 ? task.assignee.name.substring(0, 10) + '...' : task.assignee.name}
             </span>
           </div>
         ) : (
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Unassigned</span>
+          <Tooltip content="Unassigned">
+            <div className="avatar" style={{ width: 20, height: 20, fontSize: 9, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', color: 'var(--text-muted)', flexShrink: 0 }}>
+              <UserIcon size={12} />
+            </div>
+          </Tooltip>
         )}
       </div>
     </div>

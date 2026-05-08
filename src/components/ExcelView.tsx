@@ -1,16 +1,62 @@
 import React, { useState } from 'react';
-import { FileText, Trash2 } from 'lucide-react';
-import type { Task, TimeLog } from '../types';
+import { FileText, Trash2, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import type { Task, TimeLog, User } from '../types';
 
 interface ExcelViewProps {
   tasks: Task[];
   timeLogs: TimeLog[];
   onTaskClick: (taskId: string) => void;
   onDeleteTasks: (taskIds: string[]) => void;
+  availableUsers: User[];
+  onUploadTasks: (newTasks: any[]) => void;
 }
 
-export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: ExcelViewProps) => {
+export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks, availableUsers, onUploadTasks }: ExcelViewProps) => {
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        const newTasks = data.map((row: any) => {
+          const assigneeName = row['Assignee'] || row['assignee'] || row['Owner'];
+          const assignee = availableUsers.find(u => 
+            u.name.toLowerCase().includes(String(assigneeName || '').toLowerCase()) ||
+            u.email.toLowerCase().includes(String(assigneeName || '').toLowerCase())
+          );
+
+          return {
+            title: row['Task Name'] || row['task_name'] || row['Title'] || row['Task'] || 'Untitled Task',
+            description: row['Description'] || row['description'] || '',
+            estimatedTime: String(row['Estimated Hours'] || row['estimated_hours'] || row['Estimate'] || row['Hours'] || ''),
+            assignee: assignee || null,
+            status: 'open'
+          };
+        });
+
+        if (newTasks.length > 0) {
+          onUploadTasks(newTasks);
+          alert(`Successfully imported ${newTasks.length} tasks!`);
+        }
+      } catch (err) {
+        console.error('Error parsing excel:', err);
+        alert('Failed to parse Excel file. Please ensure it is a valid .xlsx or .xls file.');
+      }
+    };
+    reader.readAsBinaryString(file);
+    // Reset input
+    e.target.value = '';
+  };
 
   const toggleTask = (taskId: string) => {
     const next = new Set(selectedTasks);
@@ -49,18 +95,32 @@ export const ExcelView = ({ tasks, timeLogs, onTaskClick, onDeleteTasks }: Excel
             <FileText size={28} color="var(--brand-orange)" />
             Task Ledger
           </h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500 }}>Comprehensive spreadsheet overview of project intelligence.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500 }}>Comprehensive spreadsheet overview of workspace tasks.</p>
         </div>
-        {selectedTasks.size > 0 && (
-          <button 
-            className="btn btn-primary"
-            onClick={handleDeleteSelected}
-            style={{ background: 'var(--priority-high)', boxShadow: '0 8px 16px rgba(239, 68, 68, 0.3)' }}
-          >
-            <Trash2 size={16} />
-            Delete Selected ({selectedTasks.size})
-          </button>
-        )}
+        
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <label className="btn btn-secondary" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}>
+            <Upload size={16} />
+            Upload Excel
+            <input 
+              type="file" 
+              accept=".xlsx, .xls, .csv" 
+              onChange={handleFileUpload} 
+              style={{ display: 'none' }} 
+            />
+          </label>
+
+          {selectedTasks.size > 0 && (
+            <button 
+              className="btn btn-primary"
+              onClick={handleDeleteSelected}
+              style={{ background: 'var(--priority-high)', boxShadow: '0 8px 16px rgba(239, 68, 68, 0.3)' }}
+            >
+              <Trash2 size={16} />
+              Delete Selected ({selectedTasks.size})
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="glass-card" style={{ 

@@ -193,7 +193,7 @@ export const CreateTaskModal = ({ initialStatus, activeProject, taskLists, sprin
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ fontSize: '14px', padding: '0.625rem 1.25rem' }}>Cancel</button>
+            <button type="button" className="btn btn-secondary" onClick={onClose} style={{ fontSize: '14px', padding: '0.625rem 1.25rem', color: '#4a5568', borderColor: '#e2e8f0', background: '#f8fafc' }}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={!title.trim() || !taskListId} style={{ fontSize: '14px', padding: '0.625rem 1.25rem' }}>Create Task</button>
           </div>
         </form>

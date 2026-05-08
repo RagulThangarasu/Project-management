@@ -12,8 +12,6 @@ interface DashboardViewProps {
   taskLists: TaskList[];        // to resolve project membership
   onProjectClick: (project: Project) => void;
   onTaskClick: (taskId: string) => void;
-  onInviteUser?: (email: string) => Promise<string | void>;
-  onRemoveInvite?: (email: string) => Promise<void>;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -45,65 +43,8 @@ export const DashboardView = ({
   taskLists,
   onProjectClick,
   onTaskClick,
-  onInviteUser,
-  onRemoveInvite,
 }: DashboardViewProps) => {
   const [myTasksFilter, setMyTasksFilter] = useState<'all' | 'in_progress' | 'open' | 'in_review'>('all');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
-  const [inviteStatus, setInviteStatus] = useState<string | null>(null);
-  const [invitedUsers, setInvitedUsers] = useState<{email: string, status: string, token: string}[]>([]);
-  const [, setIsLoadingInvites] = useState(false);
-
-  const fetchInvites = async () => {
-    if (currentUser.role !== 'admin') return;
-    try {
-      setIsLoadingInvites(true);
-      const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
-      const res = await fetch(`${API_BASE}/invites`);
-      const data = await res.json();
-      setInvitedUsers(data);
-    } catch (err) {
-      console.error('Failed to fetch invites', err);
-    } finally {
-      setIsLoadingInvites(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchInvites();
-  }, []);
-
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-
-  const handleInvite = async () => {
-    if (!inviteEmail || !onInviteUser) return;
-    setIsInviting(true);
-    setInviteStatus(null);
-    setGeneratedLink(null);
-    try {
-      const link = await onInviteUser(inviteEmail);
-      if (link) setGeneratedLink(link as string);
-      setInviteStatus('Success! User has been invited.');
-      setInviteEmail('');
-      fetchInvites();
-    } catch (err) {
-      setInviteStatus('Failed to invite user. Please try again.');
-    } finally {
-      setIsInviting(false);
-    }
-  };
-
-  const handleRemoveInvite = async (email: string) => {
-    if (!onRemoveInvite) return;
-    try {
-      await onRemoveInvite(email);
-      fetchInvites();
-    } catch (err) {
-      console.error('Failed to remove invite', err);
-    }
-  };
-
   // ── Projects accessible to me ──
   const myProjects = allProjects.filter(
     (p) => currentUser.role === 'admin' || p.members.includes(currentUser.id)
@@ -153,125 +94,6 @@ export const DashboardView = ({
         </div>
       </div>
 
-      {/* Admin Invite Panel */}
-      {currentUser.role === 'admin' && (
-        <div style={{ background: 'var(--bg-surface)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-             <Users size={20} color="var(--accent-primary)" /> Invite Team Member
-          </h3>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <input 
-              type="email" 
-              placeholder="colleague@hashouttech.com"
-              value={inviteEmail}
-              onChange={e => setInviteEmail(e.target.value)}
-              style={{ flex: 1, padding: '0.75rem', background: 'var(--bg-base)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 'var(--radius-md)', outline: 'none' }}
-            />
-            <button 
-              className="btn btn-primary"
-              onClick={handleInvite}
-              disabled={isInviting || !inviteEmail.toLowerCase().endsWith('@hashouttech.com')}
-              style={{ minWidth: '120px' }}
-            >
-              {isInviting ? 'Sending...' : 'Invite'}
-            </button>
-          </div>
-            {inviteStatus && (
-              <div style={{ 
-                marginTop: '0.75rem', 
-                fontSize: '0.8rem', 
-                color: inviteStatus.includes('Failed') ? '#ef4444' : '#10b981',
-                fontWeight: 500
-              }}>
-                {inviteStatus}
-              </div>
-            )}
-
-            {generatedLink && (
-              <div style={{ 
-                marginTop: '1rem', 
-                padding: '1rem', 
-                background: '#f8fafc', 
-                border: '1px dashed #cbd5e1', 
-                borderRadius: 'var(--radius-md)' 
-              }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: 600 }}>
-                  MANUAL INVITE LINK (Copy & Send):
-                </div>
-                <div style={{ 
-                  fontSize: '0.8rem', 
-                  wordBreak: 'break-all', 
-                  color: 'var(--brand-orange)', 
-                  fontWeight: 500,
-                  background: 'white',
-                  padding: '0.5rem',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '4px'
-                }}>
-                  {generatedLink}
-                </div>
-              </div>
-            )}
-          {/* Invited Users List */}
-          {invitedUsers.length > 0 && (
-            <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-color-light)', paddingTop: '1rem' }}>
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Invited Members</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {invitedUsers.map((invite, idx) => (
-                  <div 
-                    key={invite.email || idx}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      background: 'var(--bg-base)', 
-                      padding: '0.6rem 1rem', 
-                      borderRadius: 'var(--radius-md)', 
-                      border: '1px solid var(--border-color)',
-                      fontSize: '0.85rem'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <span style={{ fontWeight: 500 }}>{invite.email}</span>
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        padding: '2px 8px', 
-                        borderRadius: 'var(--radius-full)',
-                        background: invite.status === 'accepted' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
-                        color: invite.status === 'accepted' ? 'var(--status-closed)' : 'var(--priority-medium)',
-                        fontWeight: 600,
-                        textTransform: 'uppercase'
-                      }}>
-                        {invite.status}
-                      </span>
-                      {invite.status === 'pending' && (
-                        <a 
-                          href={`/accept-invite?token=${invite.token}&email=${encodeURIComponent(invite.email)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ fontSize: '0.65rem', color: 'var(--accent-primary)', textDecoration: 'underline' }}
-                        >
-                          Dev: Accept Link
-                        </a>
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => handleRemoveInvite(invite.email)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--priority-high)', padding: 0, display: 'flex', alignItems: 'center', opacity: 0.7 }}
-                      onMouseEnter={e => e.currentTarget.style.opacity = '1'}
-                      onMouseLeave={e => e.currentTarget.style.opacity = '0.7'}
-                      title="Remove Access"
-                    >
-                      <Layout size={16} style={{ transform: 'rotate(45deg)' }} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* ═══════════════════════════════════════════════════ */}
       {/* KEY METRICS ROW */}
       {/* ═══════════════════════════════════════════════════ */}
@@ -310,15 +132,15 @@ export const DashboardView = ({
       {/* MY PROJECTS */}
       {/* ═══════════════════════════════════════════════════ */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
           <FolderOpen size={20} color="var(--accent-primary)" />
           <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>My Projects</h3>
           <span
             style={{
               fontSize: '0.7rem',
               fontWeight: 700,
-              background: 'rgba(99,102,241,0.12)',
-              color: 'var(--accent-primary)',
+              background: 'rgba(240, 78, 35, 0.15)',
+              color: 'var(--brand-orange)',
               padding: '2px 8px',
               borderRadius: 'var(--radius-full)',
             }}
@@ -342,7 +164,7 @@ export const DashboardView = ({
                   background: 'var(--bg-surface)',
                   border: '1px solid var(--border-color)',
                   borderRadius: 'var(--radius-lg)',
-                  padding: '1.5rem',
+                  padding: '2rem',
                   cursor: 'pointer',
                   transition: 'all var(--transition-fast)',
                   position: 'relative',
@@ -372,7 +194,7 @@ export const DashboardView = ({
                   }}
                 />
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div
                       style={{
@@ -391,7 +213,7 @@ export const DashboardView = ({
                       {project.name.charAt(0)}
                     </div>
                     <div>
-                      <div style={{ fontSize: '1rem', fontWeight: 600 }}>{project.name}</div>
+                      <div style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.25rem' }}>{project.name}</div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>
                         {project.description}
                       </div>
@@ -401,7 +223,7 @@ export const DashboardView = ({
                 </div>
 
                 {/* Progress bar */}
-                <div style={{ marginBottom: '1rem' }}>
+                <div style={{ marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.4rem' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Progress</span>
                     <span style={{ fontWeight: 600, color: project.color }}>{comp}%</span>
@@ -421,7 +243,7 @@ export const DashboardView = ({
 
                 {/* Bottom stats */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', gap: '1rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <Zap size={12} color="var(--status-inprogress)" /> {activeTasks} active
                     </span>
@@ -486,7 +308,7 @@ export const DashboardView = ({
       {/* MY TASKS (assigned to me across all projects) */}
       {/* ═══════════════════════════════════════════════════ */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <Users size={20} color="var(--accent-secondary)" />
             <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>My Tasks</h3>
@@ -494,8 +316,8 @@ export const DashboardView = ({
               style={{
                 fontSize: '0.7rem',
                 fontWeight: 700,
-                background: 'rgba(139,92,246,0.12)',
-                color: 'var(--accent-secondary)',
+                background: 'rgba(168, 85, 247, 0.15)',
+                color: '#a855f7',
                 padding: '2px 8px',
                 borderRadius: 'var(--radius-full)',
               }}

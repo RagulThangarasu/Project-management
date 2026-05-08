@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import type { User } from '../types';
+import { auth } from '../lib/firebase';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 interface LoginScreenProps {
   users: User[];
@@ -10,13 +12,15 @@ interface LoginScreenProps {
 export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     const emailRegex = /^[a-z0-9._%+-]+@hashouttech\.com$/i;
-    
+
     if (!emailRegex.test(cleanEmail)) {
       setError('Only @hashouttech.com outlook domain users can access this application.');
       return;
@@ -34,126 +38,102 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
         throw err;
       }
     };
+
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     
     setLoading(true);
+    setError('');
+    setMessage('');
     try {
-      // Check for invites first (unless it's the admin)
-      if (cleanEmail !== 'ragul.thangarasu@hashouttech.com') {
-        try {
-          const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
-          const inviteResponse = await fetchWithTimeout(`${API_BASE}/invites`);
-          const invitedUsers: {email: string, status: string}[] = await inviteResponse.json();
-          const userInvite = invitedUsers.find(i => i.email === cleanEmail);
-          
-          if (!userInvite) {
-            setError('You have not been invited to access this dashboard. Please contact an administrator.');
-            setLoading(false);
-            return;
-          }
-
-          if (userInvite.status !== 'accepted') {
-            setError('Your invitation is pending. Please check your inbox and click the accept link to proceed.');
-            setLoading(false);
-            return;
-          }
-        } catch (inviteErr) {
-          console.warn('Invite check failed, proceeding with local fallback:', inviteErr);
-        }
-      }
-
-      let user = users.find(u => u.email === cleanEmail);
+      const password = (e.target as any).password.value;
+      const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
+      const fbUser = userCredential.user;
       
-      // If user doesn't exist by email, maybe fallback to name check for old mock users
-      if (!user) {
-        const nameParts = cleanEmail.split('@')[0].split('.');
-        const formattedName = nameParts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-        
-        user = users.find(u => u.name.toLowerCase() === formattedName.toLowerCase());
-        
-        if (!user) {
-          user = {
-            id: `usr_${Date.now()}`,
-            name: formattedName,
-            email: cleanEmail,
-            avatar: nameParts.map(p => p.charAt(0).toUpperCase()).join('').substring(0, 2),
-            role: cleanEmail === 'ragul.thangarasu@hashouttech.com' ? 'admin' : 'member'
-          };
-          
-          try {
-            const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
-            await fetchWithTimeout(`${API_BASE}/users`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(user)
-            });
-          } catch (postErr) {
-            console.warn('Failed to sync new user to backend:', postErr);
-          }
-          
-          setUsers(prev => [...prev, user!]);
-        }
-      }
-
-      // Ensure this specific user is always an admin, even if previously saved as a member
-      if (user && cleanEmail === 'ragul.thangarasu@hashouttech.com' && user.role !== 'admin') {
-        user.role = 'admin';
-        const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
-        await fetch(`${API_BASE}/users`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(user)
-        });
-      }
-      
-      onLogin(user);
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Connection to security server timed out. Attempting local login...');
-      // Fallback to local user if backend is down
+      // Map Firebase user to our application user type
       const nameParts = cleanEmail.split('@')[0].split('.');
-      const formattedName = nameParts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-      const fallbackUser = users.find(u => u.email === cleanEmail) || {
-        id: `usr_${Date.now()}`,
+      const formattedName = nameParts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+      
+      const user: User = {
+        id: fbUser.uid,
         name: formattedName,
         email: cleanEmail,
-        avatar: nameParts.map(p => p.charAt(0).toUpperCase()).join('').substring(0, 2),
-        role: cleanEmail === 'ragul.thangarasu@hashouttech.com' ? 'admin' : 'member'
+        avatar: nameParts.map((p: string) => p.charAt(0).toUpperCase()).join('').substring(0, 2),
+        role: (cleanEmail === 'ragul.thangarasu@hashouttech.com' || cleanEmail === 'ragul.thnagarasu@hashouttech.com' || cleanEmail === 'ragul.thangarasi@hashouttech.com') ? 'admin' : 'member'
       };
-      onLogin(fallbackUser);
+
+      onLogin(user);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
   };
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    
+    if (!cleanEmail.endsWith('@hashouttech.com')) {
+      setError('Please enter a valid @hashouttech.com email.');
+      return;
+    }
 
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+    
+    setLoading(true);
+    setError('');
+    setMessage('');
+    
+    try {
+      await sendPasswordResetEmail(auth, cleanEmail);
+      setMessage('Password reset link has been sent to your email.');
+      setTimeout(() => setResetMode(false), 3000);
+    } catch (err: any) {
+      console.error('Reset error:', err);
+      if (err.code === 'auth/user-not-found') {
+        setError('No user found with this email address.');
+      } else {
+        setError('Failed to send reset link. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      minHeight: '100vh', 
-      background: 'var(--bg-base)', 
-      position: 'relative', 
-      overflow: 'hidden' 
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: '100vh',
+      background: 'var(--bg-base)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
       {/* Dynamic Background Effects */}
       <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(240, 72, 29, 0.08) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }} />
       <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '40vw', height: '40vw', background: 'radial-gradient(circle, rgba(58, 29, 93, 0.4) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)' }} />
 
-      <div className="glass-card" style={{ 
-        padding: '3.5rem', 
-        borderRadius: 'var(--radius-lg)', 
-        width: '100%', 
-        maxWidth: 460, 
-        position: 'relative', 
-        zIndex: 1, 
+      <div className="glass-card" style={{
+        padding: '3.5rem',
+        borderRadius: 'var(--radius-lg)',
+        width: '100%',
+        maxWidth: 460,
+        position: 'relative',
+        zIndex: 1,
         border: '1px solid rgba(255,255,255,0.1)',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2.5rem' }}>
-          <div style={{ 
-            width: '180px', 
-            height: '40px', 
+          <div style={{
+            width: '180px',
+            height: '40px',
             backgroundColor: '#ffffff',
             maskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
             WebkitMaskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
@@ -165,88 +145,93 @@ export const LoginScreen = ({ users, onLogin, setUsers }: LoginScreenProps) => {
             WebkitMaskPosition: 'center'
           }} />
         </div>
-        
+
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem', letterSpacing: '-0.02em', color: '#fff' }}>Project Management</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 500 }}>Sign in to access your dashboard</p>
         </div>
-        
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div>
-            <label style={{ 
-              display: 'block', 
-              marginBottom: '0.75rem', 
-              fontSize: '0.75rem', 
-              fontWeight: 700, 
-              color: 'var(--text-secondary)', 
-              textTransform: 'uppercase', 
-              letterSpacing: '0.1em' 
-            }}>Email Address</label>
-            <input 
-              type="email" 
-              required
-              value={email}
-              onChange={e => { setEmail(e.target.value); setError(''); }}
-              placeholder="name@hashouttech.com"
-              style={{ 
-                width: '100%', 
-                padding: '1rem', 
-                background: 'rgba(255,255,255,0.05)', 
-                border: '1px solid var(--border-color)', 
-                color: '#fff', 
-                borderRadius: 'var(--radius-md)', 
-                outline: 'none', 
-                transition: 'var(--transition)', 
-                fontSize: '1rem' 
-              }}
-              onFocus={e => { 
-                e.target.style.borderColor = 'var(--brand-orange)'; 
-                e.target.style.background = 'rgba(255,255,255,0.08)';
-              }}
-              onBlur={e => { 
-                e.target.style.borderColor = 'var(--border-color)'; 
-                e.target.style.background = 'rgba(255,255,255,0.05)';
-              }}
-            />
-          </div>
-          
-          {error && (
-            <div style={{ 
-              display: 'flex', 
-              gap: '0.75rem', 
-              color: '#fca5a5', 
-              fontSize: '0.85rem', 
-              background: 'rgba(239, 68, 68, 0.1)', 
-              padding: '1rem', 
-              borderRadius: 'var(--radius-md)', 
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              lineHeight: 1.4
-            }}>
-               <span style={{ flexShrink: 0 }}>⚠️</span> {error}
-            </div>
-          )}
-          
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
-            style={{ 
-              width: '100%', 
-              padding: '1rem', 
-              marginTop: '0.5rem', 
-              fontSize: '1.1rem',
-              height: '54px'
-            }} 
-            disabled={loading}
-          >
-            {loading ? 'Authenticating...' : 'Sign In'}
-          </button>
-        </form>
 
-        <div style={{ 
-          marginTop: '3.5rem', 
-          paddingTop: '2rem', 
-          borderTop: '1px solid rgba(255,255,255,0.05)', 
-          textAlign: 'center' 
+        {resetMode ? (
+          <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Email Address</label>
+              <input 
+                type="email" 
+                required
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError(''); }}
+                placeholder="name@hashouttech.com"
+                style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: 'var(--radius-md)', outline: 'none' }}
+              />
+            </div>
+            
+            {error && (
+              <div style={{ display: 'flex', gap: '0.75rem', color: '#fca5a5', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <span style={{ flexShrink: 0 }}>⚠️</span> {error}
+              </div>
+            )}
+            
+            {message && (
+              <div style={{ display: 'flex', gap: '0.75rem', color: '#6ee7b7', fontSize: '0.85rem', background: 'rgba(16, 185, 129, 0.1)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <span style={{ flexShrink: 0 }}>✅</span> {message}
+              </div>
+            )}
+            
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem', height: '54px' }} disabled={loading}>
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+            
+            <button type="button" onClick={() => setResetMode(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem' }}>
+              Back to Sign In
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Email Address</label>
+              <input 
+                type="email" 
+                required
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError(''); }}
+                placeholder="name@hashouttech.com"
+                style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: 'var(--radius-md)', outline: 'none' }}
+              />
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Password</label>
+                <button type="button" onClick={() => { setResetMode(true); setError(''); setMessage(''); }} style={{ background: 'none', border: 'none', color: 'var(--brand-orange)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}>
+                  Forgot password?
+                </button>
+              </div>
+              <input 
+                name="password"
+                type="password" 
+                required
+                placeholder="••••••••"
+                style={{ width: '100%', padding: '1rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', color: '#fff', borderRadius: 'var(--radius-md)', outline: 'none' }}
+              />
+            </div>
+            
+            {error && (
+              <div style={{ display: 'flex', gap: '0.75rem', color: '#fca5a5', fontSize: '0.85rem', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                <span style={{ flexShrink: 0 }}>⚠️</span> {error}
+              </div>
+            )}
+            
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem', height: '54px' }} disabled={loading}>
+              {loading ? 'Authenticating...' : 'Sign In'}
+            </button>
+          </form>
+        )}
+
+        <div style={{
+          marginTop: '3.5rem',
+          paddingTop: '2rem',
+          borderTop: '1px solid rgba(255,255,255,0.05)',
+          textAlign: 'center'
         }}>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
             Strictly for <strong style={{ color: 'var(--brand-orange)' }}>hashouttech.com</strong> authorized users only.

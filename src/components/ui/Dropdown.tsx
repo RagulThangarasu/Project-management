@@ -19,7 +19,7 @@ export const Dropdown: React.FC<DropdownProps> = ({ items, trigger }) => {
     <DropdownMenuPrimitive.Root>
       <DropdownMenuPrimitive.Trigger asChild>
         {trigger || (
-          <button className="p-1 hover:bg-slate-100 rounded-full transition-colors">
+          <button className="btn-icon" style={{ padding: '0.25rem', borderRadius: '50%' }}>
             <MoreVertical size={16} />
           </button>
         )}
@@ -27,18 +27,50 @@ export const Dropdown: React.FC<DropdownProps> = ({ items, trigger }) => {
 
       <DropdownMenuPrimitive.Portal>
         <DropdownMenuPrimitive.Content
-          className="z-50 min-w-[180px] overflow-hidden rounded-lg border border-slate-200 bg-white p-1 shadow-2xl animate-in fade-in zoom-in duration-150"
+          className="animate-slide-up"
+          style={{
+            zIndex: 100,
+            minWidth: '180px',
+            overflow: 'hidden',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-color)',
+            background: 'var(--bg-base)',
+            padding: '0.5rem',
+            boxShadow: 'var(--shadow-lg)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
           sideOffset={5}
         >
           {items.map((item, index) => (
             <DropdownMenuPrimitive.Item
               key={index}
-              onClick={item.onClick}
-              className={`flex items-center gap-2 px-3 py-2 text-sm outline-none cursor-pointer rounded-md transition-colors ${
-                item.variant === 'danger' 
-                  ? 'text-red-600 hover:bg-red-50' 
-                  : 'text-slate-800 hover:bg-slate-100'
-              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                item.onClick();
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                padding: '0.6rem 0.85rem',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                outline: 'none',
+                cursor: 'pointer',
+                borderRadius: 'var(--radius-sm)',
+                transition: 'var(--transition)',
+                color: item.variant === 'danger' ? 'var(--priority-high)' : 'var(--text-secondary)',
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--bg-surface)';
+                e.currentTarget.style.color = item.variant === 'danger' ? '#ff8080' : 'var(--text-main)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = item.variant === 'danger' ? 'var(--priority-high)' : 'var(--text-secondary)';
+              }}
             >
               {item.icon}
               {item.label}

@@ -14,39 +14,74 @@ interface TaskModalProps {
   sprints: Sprint[];
 }
 
-const CustomSelect = ({ label, value, options, onChange, disabled, maxHeight = 200 }: { label: string, value: string, options: {value: string, label: string}[], onChange: (val: string) => void, disabled?: boolean, maxHeight?: number }) => {
+const CustomSelect = ({ label, value, options, onChange, disabled, maxHeight = 200 }: { label: string, value: string, options: {id: string, name: string}[], onChange: (val: string) => void, disabled?: boolean, maxHeight?: number }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const selectedOption = options.find(o => o.value === value);
+  const selectedOption = options.find(o => o.id === value);
 
   return (
-    <div style={{ position: 'relative' }}>
-      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{label}</label>
+    <div style={{ position: 'relative', width: '100%' }}>
+      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', marginBottom: '0.5rem', textTransform: 'uppercase' }}>{label}</label>
       <div 
         onClick={() => !disabled && setIsOpen(!isOpen)}
         style={{ 
-          width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg-surface)', 
-          border: '1px solid var(--border-color)', color: 'var(--text-primary)', 
+          width: '100%', padding: '0.6rem 0.85rem', background: '#f1f5f9', 
+          border: '1px solid #e2e8f0', color: '#1e293b', 
           borderRadius: 'var(--radius-md)', cursor: disabled ? 'not-allowed' : 'pointer',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           opacity: disabled ? 0.6 : 1,
-          fontSize: '0.875rem'
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          transition: 'all 0.2s ease'
         }}
       >
-        <span>{selectedOption?.label || 'Select...'}</span>
-        <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedOption?.name || 'Select...'}</span>
+        <ChevronDown size={14} style={{ color: '#94a3b8', flexShrink: 0, marginLeft: '0.5rem' }} />
       </div>
 
       {isOpen && !disabled && (
         <>
-          <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onPointerDown={() => setIsOpen(false)} />
-          <div className="menu-dropdown" style={{ width: '100%', marginTop: '0.25rem', zIndex: 50, maxHeight, overflowY: 'auto' }}>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onPointerDown={() => setIsOpen(false)} />
+          <div style={{ 
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: '0.25rem',
+            background: '#334155', // Dark grey for dropdown
+            border: '1px solid #475569',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
+            zIndex: 1000,
+            maxHeight,
+            overflowY: 'auto',
+            padding: '0.25rem'
+          }}>
             {options.map((opt) => (
               <button 
-                key={opt.value} 
-                className="menu-item" 
-                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                key={opt.id} 
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 1rem',
+                  textAlign: 'left',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#f1f5f9',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  borderRadius: 'var(--radius-sm)',
+                  transition: 'all 0.2s ease',
+                  display: 'block'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+                onClick={() => { onChange(opt.id); setIsOpen(false); }}
               >
-                {opt.label}
+                {opt.name}
               </button>
             ))}
           </div>

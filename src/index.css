@@ -187,6 +187,9 @@ body {
 .tag-priority-high { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 .tag-priority-medium { background: rgba(245, 158, 11, 0.2); color: #fcd34d; }
 .tag-priority-low { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+.tag-type-task { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+.tag-type-story { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; }
+.tag-type-bug { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 
 /* Layout Elements */
 .view-container {

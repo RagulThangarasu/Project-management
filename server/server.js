@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3');
 const { open } = require('sqlite');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 
 const app = express();
 app.use(cors());
@@ -22,11 +23,13 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS sprints (id TEXT PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS task_lists (id TEXT PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS time_logs (id TEXT PRIMARY KEY, data TEXT);
-    CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS reset_tokens (email TEXT PRIMARY KEY, token TEXT, expires INTEGER);
     CREATE TABLE IF NOT EXISTS invites (
       id TEXT PRIMARY KEY, 
       email TEXT UNIQUE, 
       token TEXT, 
+      role TEXT DEFAULT 'member',
       status TEXT DEFAULT 'pending'
     );
   `);
@@ -36,15 +39,25 @@ require('dotenv').config();
 
 // Nodemailer setup - CONFIGURE YOUR SMTP CREDENTIALS IN .env
 const transporter = nodemailer.createTransport({
-  host: "smtp.office365.com", // Standard for Office 365 / Outlook
+  host: "smtp.office365.com",
   port: 587,
-  secure: false, // Use TLS
+  secure: false, // TLS
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
   tls: {
-    ciphers: 'SSLv3'
+    // Removed SSLv3 as it's outdated and often rejected
+    rejectUnauthorized: false
+  }
+});
+
+// Verify connection configuration
+transporter.verify(function (error, success) {
+  if (error) {
+    console.log("❌ SMTP Connection Error:", error);
+  } else {
+    console.log("✅ SMTP Server is ready to take our messages");
   }
 });
 
@@ -107,13 +120,90 @@ app.post('/api/time_logs', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
   const u = req.body;
-  await db.run('INSERT OR REPLACE INTO users (id, data) VALUES (?, ?)', [u.id, JSON.stringify(u)]);
+  const existing = await db.get('SELECT * FROM users WHERE email = ?', u.email);
+  if (existing) {
+    await db.run('UPDATE users SET data = ? WHERE email = ?', [JSON.stringify(u), u.email]);
+  } else {
+    // Default password for new users is 'password123'
+    const hashedPassword = await bcrypt.hash('password123', 10);
+    await db.run('INSERT INTO users (id, email, password, data) VALUES (?, ?, ?, ?)', [u.id, u.email, hashedPassword, JSON.stringify(u)]);
+  }
   res.json(u);
+});
+
+// AUTH ENDPOINTS
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await db.get('SELECT * FROM users WHERE email = ?', email.toLowerCase());
+  
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  const valid = await bcrypt.compare(password, user.password);
+  if (!valid) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  res.json(JSON.parse(user.data));
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  const user = await db.get('SELECT * FROM users WHERE email = ?', email.toLowerCase());
+  
+  if (!user) {
+    // Don't reveal if user exists, but for this dev app we'll be helpful
+    return res.status(404).json({ error: 'User not found' });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = Date.now() + 3600000; // 1 hour
+  await db.run('INSERT OR REPLACE INTO reset_tokens (email, token, expires) VALUES (?, ?, ?)', [email.toLowerCase(), token, expires]);
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const resetLink = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+  const mailOptions = {
+    from: `"Hashout Support" <${process.env.SMTP_USER}>`,
+    to: email,
+    subject: "Reset your Hashout Password",
+    html: `
+      <div style="font-family: sans-serif; padding: 20px; background: #0f0a1a; color: #fff;">
+        <h2>Password Reset Request</h2>
+        <p>Click the button below to reset your password. This link expires in 1 hour.</p>
+        <a href="${resetLink}" style="display: inline-block; padding: 12px 24px; background: #f0481d; color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold;">Reset Password</a>
+        <p style="margin-top: 20px; font-size: 12px; color: #64748b;">If you didn't request this, you can safely ignore this email.</p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.json({ success: true, message: 'Reset link sent to your email' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to send email', details: err.message, link: resetLink });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { email, token, password } = req.body;
+  const record = await db.get('SELECT * FROM reset_tokens WHERE email = ? AND token = ?', [email.toLowerCase(), token]);
+
+  if (!record || record.expires < Date.now()) {
+    return res.status(400).json({ error: 'Invalid or expired token' });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  await db.run('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email.toLowerCase()]);
+  await db.run('DELETE FROM reset_tokens WHERE email = ?', email.toLowerCase());
+
+  res.json({ success: true });
 });
 
 app.get('/api/invites', async (req, res) => {
   try {
-    const invites = await db.all('SELECT email, status, token FROM invites');
+    const invites = await db.all('SELECT email, status, token, role FROM invites');
     res.json(invites);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -122,14 +212,15 @@ app.get('/api/invites', async (req, res) => {
 
 app.post('/api/invites', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, role } = req.body;
     const cleanEmail = email.toLowerCase().trim();
+    const inviteRole = role || 'member';
     const token = crypto.randomBytes(32).toString('hex');
     const id = Date.now().toString();
 
     await db.run(
-      'INSERT OR REPLACE INTO invites (id, email, token, status) VALUES (?, ?, ?, ?)', 
-      [id, cleanEmail, token, 'pending']
+      'INSERT OR REPLACE INTO invites (id, email, token, status, role) VALUES (?, ?, ?, ?, ?)', 
+      [id, cleanEmail, token, 'pending', inviteRole]
     );
 
     // Construct accept link (dynamically using FRONTEND_URL environment variable)
@@ -141,25 +232,56 @@ app.post('/api/invites', async (req, res) => {
       to: cleanEmail,
       subject: "You've been invited to Hashout Project Management",
       html: `
-        <div style="font-family: sans-serif; padding: 20px; color: #333;">
-          <h2>Hello!</h2>
-          <p>You have been invited to join the Hashout Project Management portal.</p>
-          <p>To access the dashboard, please accept the invitation by clicking the button below:</p>
-          <a href="${acceptLink}" style="display: inline-block; padding: 10px 20px; background-color: #f0481d; color: #fff; text-decoration: none; border-radius: 5px; margin: 20px 0;">Accept Invitation</a>
-          <p>If you did not expect this invitation, you can ignore this email.</p>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f0a1a; padding: 40px 20px; color: #fff; text-align: center;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #1a1425; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
+            
+            <!-- Header with Logo -->
+            <div style="background-color: #3a1d5d; padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <img src="https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg" alt="Hashout Tech" style="height: 32px; filter: brightness(0) invert(1);" />
+            </div>
+
+            <!-- Content Area -->
+            <div style="padding: 40px; text-align: left;">
+              <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #fff;">You're Invited!</h1>
+              <p style="font-size: 16px; line-height: 1.6; color: #94a3b8; margin-bottom: 30px;">
+                Hello, <br/><br/>
+                You have been invited to join the <strong>Hashout Project Management</strong> workspace. Access real-time dashboards, track your assigned tasks, and collaborate with your team efficiently.
+              </p>
+              
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${acceptLink}" style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #f0481d, #ff7043); color: #fff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 16px; box-shadow: 0 8px 16px rgba(240, 72, 29, 0.3);">Accept Invitation</a>
+              </div>
+
+              <p style="font-size: 14px; line-height: 1.6; color: #64748b; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">
+                If the button above doesn't work, copy and paste this link into your browser:<br/>
+                <a href="${acceptLink}" style="color: #f0481d; text-decoration: none; word-break: break-all;">${acceptLink}</a>
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding: 20px; background-color: rgba(255,255,255,0.02); text-align: center; font-size: 12px; color: #475569;">
+              © ${new Date().getFullYear()} Hashout Tech. All rights reserved. <br/>
+              Strictly for authorized @hashouttech.com users.
+            </div>
+          </div>
         </div>
       `
     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("❌ SMTP Error:", error);
-      } else {
-        console.log("✅ Email sent successfully:", info.response);
-      }
-    });
-
-    res.json({ email: cleanEmail, status: 'pending', acceptLink: acceptLink });
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log("✅ Email sent successfully:", info.response);
+      res.json({ email: cleanEmail, status: 'pending', acceptLink: acceptLink });
+    } catch (mailError) {
+      console.error("❌ SMTP Error while sending invite:", mailError);
+      // Still return the link so the admin can manually share it if email fails
+      res.json({ 
+        email: cleanEmail, 
+        status: 'pending', 
+        acceptLink: acceptLink,
+        warning: "Email could not be sent, but the invitation was created."
+      });
+    }
   } catch (error) {
     console.error("❌ Invitation API Error:", error);
     res.status(500).json({ error: error.message });
@@ -170,8 +292,9 @@ app.get('/api/invites/verify', async (req, res) => {
   const { email, token } = req.query;
   const invite = await db.get('SELECT * FROM invites WHERE email = ? AND token = ?', [email, token]);
   if (invite) {
-    await db.run('UPDATE invites SET status = ? WHERE email = ?', ['accepted', email]);
-    res.json({ success: true });
+    // We don't mark as accepted here yet, we'll do it when account is created or just leave it
+    // But returning the role is key
+    res.json({ success: true, role: invite.role });
   } else {
     res.status(400).json({ error: 'Invalid or expired invitation token.' });
   }
@@ -195,7 +318,10 @@ app.post('/api/seed', async (req, res) => {
     for (const s of sprints || []) await db.run('INSERT OR REPLACE INTO sprints (id, data) VALUES (?, ?)', [s.id, JSON.stringify(s)]);
     for (const tl of taskLists || []) await db.run('INSERT OR REPLACE INTO task_lists (id, data) VALUES (?, ?)', [tl.id, JSON.stringify(tl)]);
     for (const log of timeLogs || []) await db.run('INSERT OR REPLACE INTO time_logs (id, data) VALUES (?, ?)', [log.id, JSON.stringify(log)]);
-    for (const u of users || []) await db.run('INSERT OR REPLACE INTO users (id, data) VALUES (?, ?)', [u.id, JSON.stringify(u)]);
+    for (const u of users || []) {
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      await db.run('INSERT OR REPLACE INTO users (id, email, password, data) VALUES (?, ?, ?, ?)', [u.id, u.email, hashedPassword, JSON.stringify(u)]);
+    }
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -203,7 +329,21 @@ app.post('/api/seed', async (req, res) => {
 });
 
 initDB().then(() => {
-  app.listen(3001, () => {
-    console.log('Backend server running on http://localhost:3001');
+  const port = 3001;
+  const server = app.listen(port, () => {
+    console.log(`Backend server running on http://localhost:${port}`);
   });
+
+  server.on('error', (err) => {
+    console.error('❌ Server startup error:', err);
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is already in use. Please kill the process or use a different port.`);
+    }
+  });
+
+  // Keep the process alive just in case something is draining the event loop
+  setInterval(() => {}, 1000000);
+
+}).catch(err => {
+  console.error('❌ Failed to initialize database:', err);
 });

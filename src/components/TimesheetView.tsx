@@ -11,9 +11,10 @@ interface TimesheetViewProps {
   tasks: Task[];
   currentUser: User;
   addTimeLog: (log: Omit<TimeLog, 'id'>) => void;
+  users: User[];
 }
 
-export const TimesheetView = ({ timeLogs, tasks, currentUser, addTimeLog }: TimesheetViewProps) => {
+export const TimesheetView = ({ timeLogs, tasks, currentUser, addTimeLog, users }: TimesheetViewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState('');
   const [hours, setHours] = useState('');
@@ -38,6 +39,27 @@ export const TimesheetView = ({ timeLogs, tasks, currentUser, addTimeLog }: Time
     setSelectedTaskId('');
     setHours('');
     setNotes('');
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '0.75rem',
+    background: '#ffffff',
+    border: '1px solid #e2e8f0',
+    color: '#1a202c',
+    borderRadius: 'var(--radius-md)',
+    fontSize: '14px',
+    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    fontSize: '14px',
+    fontWeight: 500,
+    marginBottom: '0.5rem',
+    color: '#1a202c'
   };
 
   return (
@@ -68,7 +90,7 @@ export const TimesheetView = ({ timeLogs, tasks, currentUser, addTimeLog }: Time
           <tbody>
             {timeLogs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(log => {
               const task = tasks.find(t => t.id === log.taskId);
-              const user = mockUsers.find(u => u.id === log.userId);
+              const user = users.find(u => u.id === log.userId) || mockUsers.find(u => u.id === log.userId);
               return (
                 <tr key={log.id}>
                   <td style={{ color: 'var(--text-muted)' }}>{log.date}</td>
@@ -118,17 +140,17 @@ export const TimesheetView = ({ timeLogs, tasks, currentUser, addTimeLog }: Time
                 />
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Date</label>
+                    <label style={labelStyle}>Date</label>
                     <input 
                       type="date" 
                       required
                       value={date}
                       onChange={e => setDate(e.target.value)}
-                      style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-base)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 'var(--radius-md)', outline: 'none' }}
+                      style={inputStyle}
                     />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Hours</label>
+                    <label style={labelStyle}>Hours</label>
                     <input 
                       type="number" 
                       step="0.1"
@@ -138,22 +160,22 @@ export const TimesheetView = ({ timeLogs, tasks, currentUser, addTimeLog }: Time
                       value={hours}
                       onChange={e => setHours(e.target.value)}
                       placeholder="e.g. 2.5"
-                      style={{ width: '100%', padding: '0.6rem', background: 'var(--bg-base)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 'var(--radius-md)', outline: 'none' }}
+                      style={inputStyle}
                     />
                   </div>
                 </div>
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>Work Description</label>
+                  <label style={labelStyle}>Work Description</label>
                   <ReactQuill 
                     theme="snow"
                     value={notes}
                     onChange={setNotes}
-                    style={{ background: 'var(--bg-base)', height: '250px', display: 'flex', flexDirection: 'column', flex: 1 }}
+                    style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 'var(--radius-md)', height: '250px', display: 'flex', flexDirection: 'column', flex: 1, color: '#1a202c' }}
                   />
                 </div>
               </div>
-              <div className="modal-footer" style={{ padding: '1.5rem', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '1rem' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
+              <div className="modal-footer" style={{ padding: '1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)} style={{ color: '#4a5568', borderColor: '#e2e8f0', background: '#f8fafc' }}>Cancel</button>
                 <button type="submit" className="btn btn-primary">Save Log</button>
               </div>
             </form>

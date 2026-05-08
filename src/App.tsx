@@ -1,6 +1,6 @@
 // Build: 2026-05-07T14:40:00Z
 import { useState, useEffect } from 'react';
-import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2 } from 'lucide-react';
+import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2, X } from 'lucide-react';
 import { mockUsers, mockProjects, mockTaskLists, initialTasks, initialTimeLogs } from './data';
 import { api } from './api';
 import type { Task, User, Project, TimeLog, TaskStatus, TaskList, Sprint } from './types';
@@ -18,32 +18,81 @@ import { ExcelView } from './components/ExcelView';
 import { MetricsView } from './components/MetricsView';
 import { LoginScreen } from './components/LoginScreen';
 import { AcceptInvite } from './components/AcceptInvite';
-import { supabase } from './lib/supabase';
+import { auth } from './lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { ResetPassword } from './components/ResetPassword';
 import { Dropdown } from './components/ui/Dropdown';
 import { Tooltip } from './components/ui/Tooltip';
+import { AdminView } from './components/AdminView';
+import { Shield } from 'lucide-react';
 
 function App() {
   const [users, setUsers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('pm-currentUser');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Subscribe to Firebase auth changes
+    const unsubscribe = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) {
+        syncUser(fbUser);
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  async function syncUser(sbUser: any) {
+    const cleanEmail = sbUser.email?.toLowerCase();
+    
+    // 1. Check if user is in our local list
+    let user = users.find(u => u.email === cleanEmail);
+    
+    if (!user) {
+      // 2. Fallback: try to fetch from backend or create new
+      const nameParts = cleanEmail.split('@')[0].split('.');
+      const formattedName = nameParts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+      
+      user = {
+        id: sbUser.uid || sbUser.id,
+        name: formattedName,
+        email: cleanEmail,
+        avatar: nameParts.map((p: string) => p.charAt(0).toUpperCase()).join('').substring(0, 2),
+        role: (cleanEmail === 'ragul.thangarasu@hashouttech.com' || cleanEmail === 'ragul.thnagarasu@hashouttech.com' || cleanEmail === 'ragul.thangarasi@hashouttech.com') ? 'admin' : 'member'
+      };
+
+      // Sync to backend users table
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        await fetch(`${API_BASE}/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user)
+        });
+      } catch (err) {
+        console.warn('Failed to sync user to backend:', err);
+      }
+    }
+    
+    setCurrentUser(user);
+  }
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    localStorage.setItem('pm-currentUser', JSON.stringify(user));
   };
   
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut(auth);
     setCurrentUser(null);
-    localStorage.removeItem('pm-currentUser');
   };
   
+  const [projects, setProjects] = useState<Project[]>(mockProjects);
   const visibleProjects = currentUser 
-    ? mockProjects.filter(p => currentUser.role === 'admin' || p.members.includes(currentUser.id)) 
-    : mockProjects;
+    ? projects.filter(p => currentUser.role === 'admin' || p.members.includes(currentUser.id) || currentUser.role === 'member') 
+    : projects;
   const [activeProject, setActiveProject] = useState<Project>(visibleProjects[0]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'backlog' | 'board' | 'list' | 'timesheet' | 'excel' | 'metrics'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'backlog' | 'board' | 'list' | 'timesheet' | 'excel' | 'metrics' | 'admin'>('dashboard');
   const [activeSprintId, setActiveSprintId] = useState<string | 'all'>('all');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
@@ -54,9 +103,11 @@ function App() {
   const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [creatingTaskStatus, setCreatingTaskStatus] = useState<TaskStatus | null>(null);
+  const [isCreatingSprint, setIsCreatingSprint] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const handleInviteUser = async (email: string) => {
-    const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     const res = await fetch(`${API_BASE}/invites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -67,7 +118,7 @@ function App() {
   };
 
   const handleRemoveInvite = async (email: string) => {
-    const API_BASE = 'https://hashout-jira-backend.onrender.com/api';
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
     await fetch(`${API_BASE}/invites/${encodeURIComponent(email)}`, {
       method: 'DELETE'
     });
@@ -97,12 +148,18 @@ function App() {
         }
 
         let data = result as any;
+        if (!data) throw new Error('No data received from backend');
 
-        if (data.tasks.length === 0 && data.sprints.length === 0) {
+        // Robust checks for data structure
+        const safeTasks = data.tasks || [];
+        const safeSprints = data.sprints || [];
+        const safeUsers = data.users || [];
+
+        if (safeTasks.length === 0 && safeSprints.length === 0) {
           const defaultSprints = mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' }));
           await api.seedData({ tasks: initialTasks, sprints: defaultSprints, taskLists: mockTaskLists, timeLogs: initialTimeLogs, users: mockUsers });
           data = await api.getData();
-        } else if (!data.users || data.users.length === 0) {
+        } else if (safeUsers.length === 0) {
           await api.seedData({ users: mockUsers });
           data = await api.getData();
         }
@@ -117,8 +174,10 @@ function App() {
         const firstProjectId = mockProjects[0]?.id;
         const first = data.sprints.find((s: Sprint) => s.projectId === firstProjectId);
         if (first) setActiveSprintId(first.id);
-      } catch (err) {
-        console.warn('Backend unavailable – loading local data:', err);
+      } catch (err: any) {
+        console.error('Critical loading error:', err);
+        setLoadError(err.message || 'Unknown error occurred while loading workspace.');
+        // Fallback to local data
         setUsers(mockUsers);
         setTasks(initialTasks);
         setSprints(mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
@@ -163,6 +222,7 @@ function App() {
     const prefix = taskData.type === 'bug' ? 'BUG' : taskData.type === 'story' ? 'STR' : 'TSK';
     
     const maxId = tasks.reduce((max: number, task: Task) => {
+      if (!task || !task.id || typeof task.id !== 'string') return max;
       const match = task.id.match(new RegExp(`^${prefix}-(\\d+)$`));
       if (match) {
         return Math.max(max, parseInt(match[1], 10));
@@ -261,10 +321,34 @@ function App() {
     </div>
   );
 
+  if (loadError && !currentUser) return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'var(--bg-base)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '2rem', textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#fff', marginBottom: '1rem' }}>Workspace Load Failed</h2>
+      <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', marginBottom: '2rem', lineHeight: 1.6 }}>
+        {loadError}
+      </p>
+      <div style={{ display: 'flex', gap: '1rem' }}>
+        <button className="btn btn-primary" onClick={() => window.location.reload()}>Retry Connection</button>
+        <button className="btn btn-secondary" onClick={() => { setLoadError(null); setIsLoaded(true); }}>Use Offline Mode</button>
+      </div>
+    </div>
+  );
+
   const isAcceptingInvite = window.location.pathname === '/accept-invite';
+  const isResettingPassword = window.location.pathname === '/reset-password';
 
   if (isAcceptingInvite) {
     return <AcceptInvite />;
+  }
+
+  if (isResettingPassword) {
+    return <ResetPassword />;
   }
 
   if (!currentUser) {
@@ -276,7 +360,19 @@ function App() {
       {/* Sidebar */}
       <aside className="sidebar" style={{ background: 'rgba(58, 29, 93, 0.3)', borderRight: '1px solid var(--border-color)', backdropFilter: 'blur(10px)' }}>
         <div className="sidebar-header" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color-light)', marginBottom: '1rem' }}>
-          <div style={{ fontSize: '1rem', color: 'var(--brand-orange)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', textAlign: 'left' }}>Project Intelligence</div>
+          <div style={{ 
+            width: '120px', 
+            height: '28px', 
+            backgroundColor: '#ffffff',
+            maskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
+            WebkitMaskImage: 'url(https://favorable-car-4949e1f525.media.strapiapp.com/Hashout_Logo_SVG_fc3b3ba449.svg)',
+            maskSize: 'contain',
+            WebkitMaskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            WebkitMaskRepeat: 'no-repeat',
+            maskPosition: 'left center',
+            WebkitMaskPosition: 'left center'
+          }} />
         </div>
         <nav className="sidebar-nav">
           <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
@@ -291,9 +387,6 @@ function App() {
           <div className={`nav-item ${activeTab === 'board' ? 'active' : ''}`} onClick={() => setActiveTab('board')}>
             <CheckSquare size={18} /> Task Board
           </div>
-          <div className={`nav-item ${activeTab === 'list' ? 'active' : ''}`} onClick={() => setActiveTab('list')}>
-            <List size={18} /> Task List
-          </div>
           <div className={`nav-item ${activeTab === 'timesheet' ? 'active' : ''}`} onClick={() => setActiveTab('timesheet')}>
             <Clock size={18} /> Timesheets
           </div>
@@ -303,55 +396,23 @@ function App() {
           <div className={`nav-item ${activeTab === 'metrics' ? 'active' : ''}`} onClick={() => setActiveTab('metrics')}>
             <BarChart2 size={18} /> Metrics
           </div>
-          <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem', marginTop: 'auto' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', marginBottom: '0.5rem', padding: '0 0.25rem' }}>TASK LISTS</div>
-            {taskLists.filter((tl: TaskList) => tl.projectId === activeProject?.id).map((tl: TaskList) => (
-              <div key={tl.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0.5rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', flexShrink: 0 }} />
-                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tl.name}</span>
-              </div>
-            ))}
-            {isAddingTaskList ? (
-              <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.25rem' }}>
-                <input
-                  autoFocus
-                  value={newTaskListName}
-                  onChange={e => setNewTaskListName(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && newTaskListName.trim()) {
-                      const newTL = { id: `tl-${Date.now()}`, projectId: activeProject.id, name: newTaskListName.trim() };
-                      setTaskLists([...taskLists, newTL]);
-                      setNewTaskListName('');
-                      setIsAddingTaskList(false);
-                    }
-                    if (e.key === 'Escape') { setIsAddingTaskList(false); setNewTaskListName(''); }
-                  }}
-                  placeholder="List name…"
-                  style={{ flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', padding: '0.25rem 0.4rem', fontSize: '0.8rem', outline: 'none' }}
-                />
-                <button
-                  onClick={async () => {
-                    if (newTaskListName.trim()) {
-                      const newTL = { id: `tl-${Date.now()}`, projectId: activeProject.id, name: newTaskListName.trim() };
-                      setTaskLists([...taskLists, newTL]);
-                      setNewTaskListName('');
-                      setIsAddingTaskList(false);
-                      await api.createTaskList(newTL);
-                    }
-                  }}
-                  style={{ background: 'var(--accent-primary)', border: 'none', color: '#fff', borderRadius: 'var(--radius-sm)', padding: '0 0.4rem', cursor: 'pointer', fontSize: '0.75rem' }}
-                >✓</button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAddingTaskList(true)}
-                style={{ marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.78rem', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-sm)', width: '100%' }}
-              >
-                <Plus size={12} /> New Task List
-              </button>
-            )}
-          </div>
+
+          {currentUser && currentUser.role === 'admin' && (
+            <div 
+              className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
+              onClick={() => setActiveTab('admin')}
+              style={{ 
+                marginTop: '0.5rem',
+                color: 'var(--brand-orange)',
+                background: activeTab === 'admin' ? 'rgba(240, 72, 29, 0.1)' : 'transparent'
+              }}
+            >
+              <Shield size={18} /> 
+              <span style={{ fontWeight: 700 }}>Admin Portal</span>
+            </div>
+          )}
         </nav>
+
 
         {/* User Profile Logon - Persistent at Bottom */}
         <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color-light)', padding: '1.25rem', position: 'relative' }}>
@@ -439,24 +500,20 @@ function App() {
               style={{ minWidth: '120px' }}
             />
             </div>
-            <button 
-              className="btn-icon" 
-              onClick={async () => {
-                const name = prompt('Enter new Sprint name:');
-                if (name?.trim()) {
-                  const newSprint = { id: `sp-${Date.now()}`, projectId: activeProject.id, name: name.trim() };
-                  setSprints([...sprints, newSprint]);
-                  setActiveSprintId(newSprint.id);
-                  await api.createSprint(newSprint);
-                }
-              }}
-              title="Create New Sprint"
-            >
-              <Plus size={16} />
-            </button>
-            <button className="btn btn-primary" onClick={() => setCreatingTaskStatus('open')}>
-              <Plus size={16} /> Create Ticket
-            </button>
+            {currentUser.role === 'admin' && (
+              <>
+                <button 
+                  className="btn-icon" 
+                  onClick={() => setIsCreatingSprint(true)}
+                  title="Create New Sprint"
+                >
+                  <Plus size={16} />
+                </button>
+                <button className="btn btn-primary" onClick={() => setCreatingTaskStatus('open')}>
+                  <Plus size={16} /> Create Ticket
+                </button>
+              </>
+            )}
 
             <div style={{ position: 'relative' }}>
               {/* User profile removed from header (now persistent in sidebar) */}
@@ -478,8 +535,6 @@ function App() {
                 setActiveTab('board');
               }}
               onTaskClick={setSelectedTaskId}
-              onInviteUser={handleInviteUser}
-              onRemoveInvite={handleRemoveInvite}
             />
           )}
           {activeTab === 'backlog' && (
@@ -497,7 +552,16 @@ function App() {
             />
           )}
           {activeTab === 'list' && (
-            <TaskListView tasks={filteredTasks} updateTask={updateTask} deleteTask={deleteTask} currentUser={currentUser} onTaskClick={setSelectedTaskId} />
+            <TaskListView 
+              tasks={filteredTasks} 
+              taskLists={taskLists}
+              activeProject={activeProject}
+              updateTask={updateTask} 
+              deleteTask={deleteTask} 
+              currentUser={currentUser} 
+              onTaskClick={setSelectedTaskId} 
+              onBackHome={() => setActiveTab('dashboard')}
+            />
           )}
           {activeTab === 'excel' && (
             <ExcelView 
@@ -505,6 +569,20 @@ function App() {
               timeLogs={timeLogs} 
               onTaskClick={setSelectedTaskId} 
               onDeleteTasks={deleteTasks}
+              availableUsers={users}
+              onUploadTasks={(newTasksData) => {
+                newTasksData.forEach(tData => {
+                  addTask({
+                    ...tData,
+                    projectId: activeProject.id,
+                    taskListId: taskLists.find(tl => tl.projectId === activeProject.id)?.id || taskLists[0].id,
+                    sprintId: activeSprintId === 'all' ? (sprints.find(s => s.projectId === activeProject.id)?.id || '') : activeSprintId,
+                    type: 'task',
+                    priority: 'medium',
+                    componentName: 'General'
+                  });
+                });
+              }}
             />
           )}
           {activeTab === 'metrics' && (
@@ -517,8 +595,17 @@ function App() {
             <TimesheetView 
               timeLogs={timeLogs} 
               tasks={filteredTasks} 
-              currentUser={currentUser} 
+              currentUser={currentUser}
+              users={users}
               addTimeLog={addTimeLog} 
+            />
+          )}
+          {activeTab === 'admin' && currentUser.role === 'admin' && (
+            <AdminView 
+              currentUser={currentUser}
+              onInvite={handleInviteUser}
+              onRemoveInvite={handleRemoveInvite}
+              users={users}
             />
           )}
         </div>
@@ -543,6 +630,47 @@ function App() {
             onClose={() => setCreatingTaskStatus(null)}
             onAdd={addTask}
           />
+        )}
+        {isCreatingSprint && (
+          <div className="modal-overlay" onClick={() => setIsCreatingSprint(false)} style={{ zIndex: 1000 }}>
+            <div className="modal-content animate-slide-in" onClick={e => e.stopPropagation()} style={{ width: '90%', maxWidth: 400, padding: '2rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Create New Sprint</h2>
+                <button className="btn-icon" onClick={() => setIsCreatingSprint(false)}><X size={20} /></button>
+              </div>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const form = e.currentTarget;
+                const name = (form.elements.namedItem('sprintName') as HTMLInputElement).value;
+                if (name.trim()) {
+                  const newSprint = { id: `sp-${Date.now()}`, projectId: activeProject.id, name: name.trim() };
+                  setSprints([...sprints, newSprint]);
+                  setActiveSprintId(newSprint.id);
+                  setIsCreatingSprint(false);
+                  await api.createSprint(newSprint);
+                }
+              }}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, marginBottom: '0.5rem', color: '#1a202c' }}>Sprint Name</label>
+                  <input 
+                    name="sprintName"
+                    autoFocus
+                    type="text" 
+                    required
+                    placeholder="E.g., Sprint 1, Q2 Roadmap"
+                    style={{ 
+                      width: '100%', padding: '0.75rem', background: '#ffffff', border: '1px solid #e2e8f0', 
+                      color: '#1a202c', borderRadius: 'var(--radius-md)', outline: 'none' 
+                    }}
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setIsCreatingSprint(false)} style={{ color: '#4a5568', borderColor: '#e2e8f0', background: '#f8fafc' }}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Create Sprint</button>
+                </div>
+              </form>
+            </div>
+          </div>
         )}
       </main>
     </div>

@@ -1,16 +1,18 @@
-import type { Task, User, TaskStatus } from '../types';
-import { mockTaskLists } from '../data';
-import { Trash2, ChevronRight, Edit, Trash } from 'lucide-react';
-import { FixedSizeList } from 'react-window';
+import React from 'react';
+import type { Task, User, TaskStatus, TaskList, Project } from '../types';
+import { Trash2, Edit, Trash, Home, AlertCircle } from 'lucide-react';
 import { Dropdown } from './ui/Dropdown';
 import { Tooltip } from './ui/Tooltip';
 
 interface TaskListViewProps {
   tasks: Task[];
+  taskLists: TaskList[];
+  activeProject: Project;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
   currentUser: User;
   onTaskClick: (taskId: string) => void;
+  onBackHome: () => void;
 }
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
@@ -28,95 +30,134 @@ const priorityConfig: Record<string, { color: string; bg: string }> = {
   low:    { color: '#93c5fd', bg: 'rgba(59,130,246,0.15)' },
 };
 
-export const TaskListView = ({ tasks, updateTask, deleteTask, currentUser, onTaskClick }: TaskListViewProps) => {
+export const TaskListView = ({ tasks = [], taskLists = [], activeProject, updateTask, deleteTask, currentUser, onTaskClick, onBackHome }: TaskListViewProps) => {
+  if (!activeProject) return null;
+
+  const projectTaskLists = taskLists.filter(tl => tl.projectId === activeProject.id);
+
+  if (projectTaskLists.length === 0) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: 'calc(100vh - 200px)', 
+        gap: '1.5rem',
+        textAlign: 'center'
+      }}>
+        <div style={{ 
+          width: '120px', 
+          height: '120px', 
+          borderRadius: '50%', 
+          background: 'rgba(240, 72, 29, 0.05)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          border: '1px solid rgba(240, 72, 29, 0.1)'
+        }}>
+          <AlertCircle size={48} color="var(--brand-orange)" style={{ opacity: 0.8 }} />
+        </div>
+        <div>
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem' }}>404</h2>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '1rem' }}>Task Lists Not Found</h3>
+          <p style={{ color: 'var(--text-muted)', maxWidth: '400px', margin: '0 auto' }}>
+            There are no task lists configured for <strong>{activeProject.name}</strong> yet. 
+            Create a list in the sidebar to get started.
+          </p>
+        </div>
+        <button 
+          className="btn btn-primary" 
+          onClick={onBackHome}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 2rem' }}
+        >
+          <Home size={18} /> Back to Dashboard
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', height: 'calc(100vh - 200px)' }}>
-      {mockTaskLists.map(taskList => {
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', paddingBottom: '3rem' }}>
+      {projectTaskLists.map(taskList => {
         const listTasks = tasks.filter(t => t.taskListId === taskList.id);
-        if (listTasks.length === 0) return null;
-
-        const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
-          const task = listTasks[index];
-          const sc = statusConfig[task.status] || statusConfig.open;
-          const pc = priorityConfig[task.priority] || priorityConfig.medium;
-
-          return (
-            <div style={{ ...style, padding: '4px 0' }}>
-              <div
-                onClick={() => onTaskClick(task.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '1rem',
-                  padding: '0.75rem 1rem',
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  height: '56px',
-                  boxSizing: 'border-box'
-                }}
-                className="hover-card"
-              >
-                <div style={{ width: '3px', height: '24px', borderRadius: '2px', background: sc.color, flexShrink: 0 }} />
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', minWidth: '70px' }}>{task.id}</span>
-                <span style={{ flex: 1, fontSize: '0.9rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</span>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} onClick={e => e.stopPropagation()}>
-                  <select
-                    value={task.status}
-                    onChange={e => updateTask(task.id, { status: e.target.value as any })}
-                    style={{
-                      padding: '2px 8px', borderRadius: '12px', background: sc.bg, color: sc.color,
-                      border: `1px solid ${sc.color}40`, fontSize: '0.7rem', fontWeight: 700, outline: 'none'
-                    }}
-                  >
-                    <option value="open">Open</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                  
-                  <span style={{
-                    padding: '2px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800,
-                    textTransform: 'uppercase', background: pc.bg, color: pc.color, border: `1px solid ${pc.color}30`
-                  }}>{task.priority}</span>
-                </div>
-
-                {task.assignee && (
-                  <Tooltip content={task.assignee.name}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: 700, color: '#fff' }}>
-                      {task.assignee.avatar}
-                    </div>
-                  </Tooltip>
-                )}
-
-                <Dropdown 
-                  items={[
-                    { label: 'Edit', onClick: () => onTaskClick(task.id), icon: <Edit size={14}/> },
-                    { label: 'Delete', onClick: () => deleteTask(task.id), icon: <Trash size={14}/>, variant: 'danger' }
-                  ]} 
-                />
-              </div>
-            </div>
-          );
-        };
 
         return (
-          <div key={taskList.id} style={{ display: 'flex', flexDirection: 'column', height: listTasks.length > 5 ? '400px' : 'auto' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+          <div key={taskList.id} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
               <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--brand-orange)' }} />
-              <h3 style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fff' }}>{taskList.name}</h3>
-              <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '1px 8px', borderRadius: '12px', background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)' }}>{listTasks.length}</span>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fff' }}>{taskList.name}</h3>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 10px', borderRadius: '12px', background: 'rgba(255,255,255,0.08)', color: 'var(--text-secondary)' }}>{listTasks.length}</span>
             </div>
 
-            <div style={{ flex: 1 }}>
-              <FixedSizeList
-                height={Math.min(listTasks.length * 64, 400)}
-                itemCount={listTasks.length}
-                itemSize={64}
-                width="100%"
-              >
-                {Row}
-              </FixedSizeList>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {listTasks.length > 0 ? (
+                listTasks.map(task => {
+                  const sc = statusConfig[task.status] || statusConfig.open;
+                  const pc = priorityConfig[task.priority] || priorityConfig.medium;
+                  
+                  return (
+                    <div
+                      key={task.id}
+                      onClick={() => onTaskClick(task.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '1rem',
+                        padding: '1rem',
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                      }}
+                    >
+                      <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: sc.color, flexShrink: 0 }} />
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', minWidth: '75px' }}>{task.id}</span>
+                      <span style={{ flex: 1, fontSize: '0.95rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</span>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} onClick={e => e.stopPropagation()}>
+                        <div style={{
+                          padding: '3px 10px', borderRadius: '12px', background: sc.bg, color: sc.color,
+                          border: `1px solid ${sc.color}30`, fontSize: '0.7rem', fontWeight: 700
+                        }}>
+                          {sc.label}
+                        </div>
+                        
+                        <span style={{
+                          padding: '3px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800,
+                          textTransform: 'uppercase', background: pc.bg, color: pc.color, border: `1px solid ${pc.color}25`
+                        }}>{task.priority}</span>
+                      </div>
+
+                      {task.assignee && (
+                        <Tooltip content={task.assignee.name}>
+                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                            {task.assignee.avatar}
+                          </div>
+                        </Tooltip>
+                      )}
+
+                      <Dropdown 
+                        items={[
+                          { label: 'Edit', onClick: () => onTaskClick(task.id), icon: <Edit size={14}/> },
+                          { label: 'Delete', onClick: () => deleteTask(task.id), icon: <Trash size={14}/>, variant: 'danger' }
+                        ]} 
+                      />
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={{ padding: '2.5rem', textAlign: 'center', background: 'rgba(255,255,255,0.015)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  No tasks in this list
+                </div>
+              )}
             </div>
           </div>
         );
