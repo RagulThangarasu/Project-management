@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Layout, CheckCircle, Clock, AlertTriangle, FolderOpen, ArrowRight, Bug, BookOpen, Wrench, Users, Zap, TrendingUp } from 'lucide-react';
+import { Layout, CheckCircle, Clock, AlertTriangle, FolderOpen, ArrowRight, Bug, BookOpen, Wrench, Users, Zap, TrendingUp, Trash2 } from 'lucide-react';
 import type { Task, TimeLog, User, Project, TaskList } from '../types';
 import { mockUsers } from '../data';
 
@@ -10,6 +10,8 @@ interface DashboardViewProps {
   allProjects: Project[];      // ALL projects in the system
   allTasks: Task[];             // ALL tasks across projects
   taskLists: TaskList[];        // to resolve project membership
+  onCreateProject?: (name: string, description: string) => void;
+  onDeleteProject?: (projectId: string) => void;
   onProjectClick: (project: Project) => void;
   onTaskClick: (taskId: string) => void;
 }
@@ -132,21 +134,37 @@ export const DashboardView = ({
       {/* MY PROJECTS */}
       {/* ═══════════════════════════════════════════════════ */}
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <FolderOpen size={20} color="var(--accent-primary)" />
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>My Projects</h3>
-          <span
-            style={{
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              background: 'rgba(240, 78, 35, 0.15)',
-              color: 'var(--brand-orange)',
-              padding: '2px 8px',
-              borderRadius: 'var(--radius-full)',
-            }}
-          >
-            {myProjects.length}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <FolderOpen size={20} color="var(--accent-primary)" />
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 600 }}>My Projects</h3>
+            <span
+              style={{
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                background: 'rgba(240, 78, 35, 0.15)',
+                color: 'var(--brand-orange)',
+                padding: '2px 8px',
+                borderRadius: 'var(--radius-full)',
+              }}
+            >
+              {myProjects.length}
+            </span>
+          </div>
+          {currentUser.role === 'admin' && onCreateProject && (
+            <button 
+              className="btn btn-primary" 
+              style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+              onClick={() => {
+                const name = prompt("Enter project name:");
+                if (!name) return;
+                const desc = prompt("Enter project description (optional):") || "";
+                onCreateProject(name, desc);
+              }}
+            >
+              + New Project
+            </button>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
@@ -181,6 +199,36 @@ export const DashboardView = ({
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
+                {/* Delete Project Button (Admins only) */}
+                {currentUser.role === 'admin' && onDeleteProject && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Are you sure you want to delete the project "${project.name}"? This action cannot be undone.`)) {
+                        onDeleteProject(project.id);
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '1rem',
+                      right: '1rem',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      color: '#ef4444',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '28px',
+                      height: '28px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      zIndex: 10
+                    }}
+                    title="Delete Project"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
                 {/* Top accent bar */}
                 <div
                   style={{

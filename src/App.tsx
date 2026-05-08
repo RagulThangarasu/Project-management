@@ -159,7 +159,7 @@ function App() {
 
         if (safeTasks.length === 0 && safeSprints.length === 0) {
           const defaultSprints = mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' }));
-          await api.seedData({ tasks: initialTasks, sprints: defaultSprints, taskLists: mockTaskLists, timeLogs: initialTimeLogs, users: mockUsers });
+          await api.seedData({ tasks: initialTasks, sprints: defaultSprints, taskLists: mockTaskLists, timeLogs: initialTimeLogs, users: mockUsers, projects: mockProjects });
           data = await api.getData();
         } else if (safeUsers.length === 0) {
           await api.seedData({ users: mockUsers });
@@ -168,12 +168,16 @@ function App() {
 
         const hashoutUsers = (data.users || []).filter((u: User) => u.email);
         setUsers(hashoutUsers.length > 0 ? hashoutUsers : mockUsers);
+        
+        const loadedProjects = data.projects && data.projects.length > 0 ? data.projects : mockProjects;
+        setProjects(loadedProjects);
+        
         setTasks(data.tasks || initialTasks);
-        setSprints(data.sprints || mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
+        setSprints(data.sprints || loadedProjects.map((p: Project) => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
         setTaskLists(data.taskLists || mockTaskLists);
         setTimeLogs(data.timeLogs || initialTimeLogs);
 
-        const firstProjectId = mockProjects[0]?.id;
+        const firstProjectId = loadedProjects[0]?.id;
         const first = data.sprints.find((s: Sprint) => s.projectId === firstProjectId);
         if (first) setActiveSprintId(first.id);
         
@@ -269,6 +273,31 @@ function App() {
     };
     setTimeLogs([...timeLogs, newLog]);
     await api.createTimeLog(newLog);
+  };
+
+  const addProject = async (name: string, description: string) => {
+    const newProject: Project = {
+      id: `p-${Date.now()}`,
+      name,
+      description,
+      color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+      members: currentUser ? [currentUser.id] : []
+    };
+    setProjects([...projects, newProject]);
+    await api.createProject(newProject);
+    
+    // Also create a default sprint for it
+    const defaultSprint = { id: `sp-${newProject.id}-1`, projectId: newProject.id, name: 'Sprint 0' };
+    setSprints([...sprints, defaultSprint]);
+    await api.createSprint(defaultSprint);
+  };
+
+  const deleteProject = async (id: string) => {
+    setProjects(projects.filter(p => p.id !== id));
+    await api.deleteProject(id);
+    if (activeProject.id === id && projects.length > 1) {
+      setActiveProject(projects.find(p => p.id !== id) || projects[0]);
+    }
   };
 
   const projectSprints = sprints.filter((s: Sprint) => s.projectId === activeProject.id);
@@ -394,6 +423,9 @@ function App() {
           </div>
           <div className={`nav-item ${activeTab === 'board' ? 'active' : ''}`} onClick={() => setActiveTab('board')}>
             <CheckSquare size={18} /> Task Board
+          </div>
+          <div className={`nav-item ${activeTab === 'list' ? 'active' : ''}`} onClick={() => setActiveTab('list')}>
+            <List size={18} /> Task List
           </div>
           <div className={`nav-item ${activeTab === 'timesheet' ? 'active' : ''}`} onClick={() => setActiveTab('timesheet')}>
             <Clock size={18} /> Timesheets
@@ -557,18 +589,17 @@ function App() {
 
         <div className="view-container">
           {activeTab === 'dashboard' && (
-            <DashboardView
-              tasks={filteredTasks}
-              timeLogs={timeLogs}
+            <DashboardView 
+              tasks={projectTasks} 
+              timeLogs={timeLogs} 
               currentUser={currentUser}
-              allProjects={mockProjects}
+              allProjects={projects}
               allTasks={tasks}
               taskLists={taskLists}
-              onProjectClick={(project) => {
-                setActiveProject(project);
-                setActiveTab('board');
-              }}
-              onTaskClick={setSelectedTaskId}
+              onCreateProject={addProject}
+              onDeleteProject={deleteProject}
+              onProjectClick={(p) => setActiveProject(p)}
+              onTaskClick={(id) => setSelectedTaskId(id)}
             />
           )}
           {activeTab === 'backlog' && (

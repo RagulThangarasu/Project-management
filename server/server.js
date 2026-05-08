@@ -23,6 +23,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS sprints (id TEXT PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS task_lists (id TEXT PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS time_logs (id TEXT PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password TEXT, data TEXT);
     CREATE TABLE IF NOT EXISTS reset_tokens (email TEXT PRIMARY KEY, token TEXT, expires INTEGER);
     CREATE TABLE IF NOT EXISTS invites (
@@ -68,8 +69,9 @@ app.get('/api/data', async (req, res) => {
     const taskLists = (await db.all('SELECT data FROM task_lists')).map(r => JSON.parse(r.data));
     const timeLogs = (await db.all('SELECT data FROM time_logs')).map(r => JSON.parse(r.data));
     const users = (await db.all('SELECT data FROM users')).map(r => JSON.parse(r.data));
+    const projects = (await db.all('SELECT data FROM projects')).map(r => JSON.parse(r.data));
     
-    res.json({ tasks, sprints, taskLists, timeLogs, users });
+    res.json({ tasks, sprints, taskLists, timeLogs, users, projects });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -116,6 +118,17 @@ app.post('/api/time_logs', async (req, res) => {
   const log = req.body;
   await db.run('INSERT OR REPLACE INTO time_logs (id, data) VALUES (?, ?)', [log.id, JSON.stringify(log)]);
   res.json(log);
+});
+
+app.post('/api/projects', async (req, res) => {
+  const project = req.body;
+  await db.run('INSERT OR REPLACE INTO projects (id, data) VALUES (?, ?)', [project.id, JSON.stringify(project)]);
+  res.json(project);
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+  await db.run('DELETE FROM projects WHERE id = ?', req.params.id);
+  res.json({ success: true });
 });
 
 app.post('/api/users', async (req, res) => {
@@ -311,13 +324,14 @@ app.delete('/api/invites/:email', async (req, res) => {
 
 // Seed endpoint (optional, called if UI has no data)
 app.post('/api/seed', async (req, res) => {
-  const { tasks, sprints, taskLists, timeLogs, users } = req.body;
+  const { tasks, sprints, taskLists, timeLogs, users, projects } = req.body;
   
   try {
     for (const t of tasks || []) await db.run('INSERT OR REPLACE INTO tasks (id, data) VALUES (?, ?)', [t.id, JSON.stringify(t)]);
     for (const s of sprints || []) await db.run('INSERT OR REPLACE INTO sprints (id, data) VALUES (?, ?)', [s.id, JSON.stringify(s)]);
     for (const tl of taskLists || []) await db.run('INSERT OR REPLACE INTO task_lists (id, data) VALUES (?, ?)', [tl.id, JSON.stringify(tl)]);
     for (const log of timeLogs || []) await db.run('INSERT OR REPLACE INTO time_logs (id, data) VALUES (?, ?)', [log.id, JSON.stringify(log)]);
+    for (const p of projects || []) await db.run('INSERT OR REPLACE INTO projects (id, data) VALUES (?, ?)', [p.id, JSON.stringify(p)]);
     for (const u of users || []) {
       const hashedPassword = await bcrypt.hash('password123', 10);
       await db.run('INSERT OR REPLACE INTO users (id, email, password, data) VALUES (?, ?, ?, ?)', [u.id, u.email, hashedPassword, JSON.stringify(u)]);

@@ -1,4 +1,4 @@
-import type { Task, Sprint, TaskList, TimeLog } from './types';
+import type { Task, Sprint, TaskList, TimeLog, Project } from './types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
 
@@ -65,6 +65,18 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(log)
     });
+    return res.json();
+  },
+  async createProject(project: Project) {
+    const res = await fetch(`${API_URL}/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(project)
+    });
+    return res.json();
+  },
+  async deleteProject(id: string) {
+    const res = await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
     return res.json();
   }
 };
