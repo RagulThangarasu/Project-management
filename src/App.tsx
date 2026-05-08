@@ -179,8 +179,8 @@ function App() {
         
         setIsBackendWaking(false);
       } catch (err: any) {
-        console.warn('Backend connection issue:', err);
-        setLoadError('Connecting to server... (Waking up Render backend)');
+        console.warn('Backend connection issue (using offline mode):', err);
+        // DO NOT set loadError here, let the user enter the app in offline mode.
         setIsBackendWaking(true); // Keep trying to wake it up in background
         
         // Fallback to local data
