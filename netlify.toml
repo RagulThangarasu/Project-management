@@ -1,6 +1,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  base = "/"
 
 [dev]
   command = "npm run dev"
@@ -11,3 +12,7 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Ensure environment variables are respected
+[build.environment]
+  NODE_VERSION = "20"
