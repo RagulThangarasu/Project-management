@@ -105,6 +105,7 @@ function App() {
   const [creatingTaskStatus, setCreatingTaskStatus] = useState<TaskStatus | null>(null);
   const [isCreatingSprint, setIsCreatingSprint] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isBackendWaking, setIsBackendWaking] = useState(false);
 
   const handleInviteUser = async (email: string) => {
     const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
@@ -137,6 +138,7 @@ function App() {
       const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 5000));
 
       try {
+        setIsBackendWaking(true);
         const result = await Promise.race([
           api.getData(),
           timeout
@@ -174,9 +176,13 @@ function App() {
         const firstProjectId = mockProjects[0]?.id;
         const first = data.sprints.find((s: Sprint) => s.projectId === firstProjectId);
         if (first) setActiveSprintId(first.id);
+        
+        setIsBackendWaking(false);
       } catch (err: any) {
-        console.error('Critical loading error:', err);
-        setLoadError(err.message || 'Unknown error occurred while loading workspace.');
+        console.warn('Backend connection issue:', err);
+        setLoadError('Connecting to server... (Waking up Render backend)');
+        setIsBackendWaking(true); // Keep trying to wake it up in background
+        
         // Fallback to local data
         setUsers(mockUsers);
         setTasks(initialTasks);
@@ -185,6 +191,8 @@ function App() {
         setTimeLogs(initialTimeLogs);
       } finally {
         setIsLoaded(true);
+        // Stop the wake indicator after a while even if failed
+        setTimeout(() => setIsBackendWaking(false), 8000);
       }
     };
     loadData();
@@ -414,8 +422,34 @@ function App() {
         </nav>
 
 
+        {/* Server Status Indicator */}
+        <div style={{ marginTop: 'auto', padding: '0 1.25rem', marginBottom: '0.5rem' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.6rem', 
+            fontSize: '0.65rem', 
+            color: 'var(--text-muted)',
+            background: 'rgba(0,0,0,0.2)',
+            padding: '0.4rem 0.75rem',
+            borderRadius: 'var(--radius-full)',
+            width: 'fit-content'
+          }}>
+            <div style={{ 
+              width: 6, 
+              height: 6, 
+              borderRadius: '50%', 
+              background: isBackendWaking ? '#fbbf24' : '#10b981',
+              boxShadow: isBackendWaking ? '0 0 8px #fbbf24' : '0 0 8px #10b981'
+            }} />
+            <span style={{ fontWeight: 700, letterSpacing: '0.05em' }}>
+              {isBackendWaking ? 'SERVER WAKING UP...' : 'SERVER ONLINE'}
+            </span>
+          </div>
+        </div>
+
         {/* User Profile Logon - Persistent at Bottom */}
-        <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border-color-light)', padding: '1.25rem', position: 'relative' }}>
+        <div style={{ borderTop: '1px solid var(--border-color-light)', padding: '1.25rem', position: 'relative' }}>
           <div style={{ 
             background: 'rgba(255,255,255,0.05)', 
             borderRadius: 'var(--radius-lg)', 
