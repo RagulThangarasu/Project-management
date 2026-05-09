@@ -20,7 +20,7 @@ export const PMView = ({ projects, users, onProjectClick }: PMViewProps) => {
     .filter(group => group.projects.length > 0);
 
   return (
-    <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: '1200px' }}>
       <div style={{ marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#fff', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
