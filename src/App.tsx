@@ -334,6 +334,13 @@ function App() {
     await api.createTaskList(newList);
   };
 
+  const deleteTaskList = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this task list and all its tasks?')) return;
+    setTaskLists(taskLists.filter(tl => tl.id !== id));
+    setTasks(tasks.filter(t => t.taskListId !== id));
+    await api.deleteTaskList(id);
+  };
+
   const projectSprints = sprints.filter((s: Sprint) => s.projectId === activeProject.id);
 
   // The first sprint of the current project acts as "Sprint 1" — tasks with no sprintId belong here
@@ -537,11 +544,37 @@ function App() {
           {taskLists.filter(tl => tl.projectId === activeProject.id).map(tl => (
             <div 
               key={tl.id} 
-              className="nav-item" 
+              className={`nav-item ${activeTab === 'list' ? 'active' : ''}`}
               onClick={() => setActiveTab('list')}
-              style={{ paddingLeft: '1.5rem', fontSize: '0.85rem' }}
+              style={{ 
+                paddingLeft: '1.5rem', 
+                fontSize: '0.85rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                group: 'true'
+              }}
             >
-              <List size={14} /> {tl.name}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <List size={14} /> {tl.name}
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteTaskList(tl.id);
+                }}
+                className="btn-icon"
+                style={{ 
+                  padding: '2px', 
+                  opacity: 0, 
+                  transition: 'opacity 0.2s ease',
+                  color: 'var(--text-muted)'
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                <Trash2 size={12} />
+              </button>
             </div>
           ))}
           <div className={`nav-item ${activeTab === 'excel' ? 'active' : ''}`} onClick={() => setActiveTab('excel')}>
