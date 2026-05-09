@@ -341,6 +341,16 @@ function App() {
     await api.createTimeLog(newLog);
   };
 
+  const updateTimeLog = async (logId: string, updates: Partial<TimeLog>) => {
+    setTimeLogs(timeLogs.map(l => l.id === logId ? { ...l, ...updates } : l));
+    await api.updateTimeLog(logId, updates);
+  };
+
+  const deleteTimeLog = async (logId: string) => {
+    setTimeLogs(timeLogs.filter(l => l.id !== logId));
+    await api.deleteTimeLog(logId);
+  };
+
   const addProject = async (name: string, description: string) => {
     const newProject: Project = {
       id: `p-${Date.now()}`,
@@ -874,6 +884,8 @@ function App() {
               currentUser={currentUser}
               users={users}
               addTimeLog={addTimeLog} 
+              updateTimeLog={updateTimeLog}
+              deleteTimeLog={deleteTimeLog}
             />
           )}
           {activeTab === 'admin' && currentUser.role === 'admin' && (

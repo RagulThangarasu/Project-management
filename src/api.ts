@@ -82,5 +82,17 @@ export const api = {
   async deleteTaskList(id: string) {
     const res = await fetch(`${API_URL}/task_lists/${id}`, { method: 'DELETE' });
     return res.json();
+  },
+  async updateTimeLog(id: string, updates: Partial<TimeLog>) {
+    const res = await fetch(`${API_URL}/time_logs/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    return res.json();
+  },
+  async deleteTimeLog(id: string) {
+    const res = await fetch(`${API_URL}/time_logs/${id}`, { method: 'DELETE' });
+    return res.json();
   }
 };
