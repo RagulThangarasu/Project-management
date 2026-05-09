@@ -1,6 +1,6 @@
 // Build: 2026-05-07T14:40:00Z
 import { useState, useEffect } from 'react';
-import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2, X } from 'lucide-react';
+import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2, X, Trash2 } from 'lucide-react';
 import { mockUsers, mockProjects, mockTaskLists, initialTasks, initialTimeLogs } from './data';
 import { api } from './api';
 import type { Task, User, Project, TimeLog, TaskStatus, TaskList, Sprint } from './types';
