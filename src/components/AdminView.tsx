@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { UserPlus, Trash2, Shield, Mail, CheckCircle, Clock } from 'lucide-react';
 import type { User } from '../types';
 import { db } from '../lib/firebase';
