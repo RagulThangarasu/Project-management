@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { auth } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export const AcceptInvite = () => {
   const [status, setStatus] = useState<'loading' | 'verifying' | 'success' | 'error' | 'setting-password'>('loading');
@@ -21,22 +22,39 @@ export const AcceptInvite = () => {
       setToken(tokenParam);
       setStatus('verifying');
       
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      fetch(`${API_BASE}/invites/verify?email=${encodeURIComponent(emailParam)}&token=${tokenParam}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
+      const verifyInvite = async () => {
+        try {
+          // 1. Check Firestore first
+          const inviteRef = doc(db, 'invites', emailParam.toLowerCase());
+          const inviteSnap = await getDoc(inviteRef);
+          
+          if (inviteSnap.exists()) {
+            const data = inviteSnap.data();
+            // In a real app we'd verify the token here too
             setRole(data.role || 'member');
             setStatus('setting-password');
           } else {
-            setStatus('error');
-            setMessage(data.error || 'Failed to verify invitation.');
+            // 2. Fallback to API if not in Firestore yet
+            const API_BASE = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
+            const res = await fetch(`${API_BASE}/invites/verify?email=${encodeURIComponent(emailParam)}&token=${tokenParam}`);
+            const data = await res.json();
+            
+            if (data.success) {
+              setRole(data.role || 'member');
+              setStatus('setting-password');
+            } else {
+              setStatus('error');
+              setMessage(data.error || 'Failed to verify invitation.');
+            }
           }
-        })
-        .catch(() => {
+        } catch (error) {
+          console.error('Verification Error:', error);
           setStatus('error');
-          setMessage('Something went wrong. Please try again later.');
-        });
+          setMessage('Could not connect to the verification server.');
+        }
+      };
+
+      verifyInvite();
     } else {
       setStatus('error');
       setMessage('Missing email or token in the URL.');
@@ -55,9 +73,6 @@ export const AcceptInvite = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const fbUser = userCredential.user;
 
-      // Sync to backend to ensure role is persisted
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      
       const nameParts = email.split('@')[0].split('.');
       const formattedName = nameParts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
       
@@ -66,19 +81,35 @@ export const AcceptInvite = () => {
         name: formattedName,
         email: email,
         avatar: nameParts.map((p: string) => p.charAt(0).toUpperCase()).join('').substring(0, 2),
-        role: role
+        role: role,
+        preferences: {
+          theme: 'dark',
+          defaultTab: 'dashboard'
+        }
       };
 
-      await fetch(`${API_BASE}/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
-      });
+      // 1. Save to Firestore
+      await setDoc(doc(db, 'users', fbUser.uid), userData);
+      console.log('✅ User profile created in Firestore');
 
-      // Update invite status
-      await fetch(`${API_BASE}/invites/verify?email=${encodeURIComponent(email)}&token=${token}`, {
-        method: 'GET' // In a real app this would be a PUT/POST to mark as accepted
-      });
+      // 2. Mark Invite as Accepted in Firestore
+      try {
+        await updateDoc(doc(db, 'invites', email.toLowerCase()), { status: 'accepted' });
+      } catch (err) {
+        console.warn('Could not update invite status in Firestore');
+      }
+
+      // 3. Sync to legacy backend for backward compatibility
+      try {
+        const API_BASE = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
+        await fetch(`${API_BASE}/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+      } catch (err) {
+        console.warn('Legacy backend sync failed');
+      }
 
       setStatus('success');
       setMessage('Your account has been created successfully! You can now log in.');

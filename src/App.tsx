@@ -25,6 +25,8 @@ import { Dropdown } from './components/ui/Dropdown';
 import { Tooltip } from './components/ui/Tooltip';
 import { AdminView } from './components/AdminView';
 import { Shield } from 'lucide-react';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { db } from './lib/firebase';
 
 function App() {
   const [users, setUsers] = useState<User[]>([]);
@@ -43,39 +45,65 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  async function syncUser(sbUser: any) {
-    const cleanEmail = sbUser.email?.toLowerCase();
+  async function syncUser(fbUser: any) {
+    const cleanEmail = fbUser.email?.toLowerCase();
+    const userRef = doc(db, 'users', fbUser.uid);
     
-    // 1. Check if user is in our local list
-    let user = users.find(u => u.email === cleanEmail);
-    
-    if (!user) {
-      // 2. Fallback: try to fetch from backend or create new
-      const nameParts = cleanEmail.split('@')[0].split('.');
-      const formattedName = nameParts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-      
-      user = {
-        id: sbUser.uid || sbUser.id,
-        name: formattedName,
-        email: cleanEmail,
-        avatar: nameParts.map((p: string) => p.charAt(0).toUpperCase()).join('').substring(0, 2),
-        role: (cleanEmail === 'ragul.thangarasu@hashouttech.com' || cleanEmail === 'ragul.thnagarasu@hashouttech.com' || cleanEmail === 'ragul.thangarasi@hashouttech.com') ? 'admin' : 'member'
-      };
+    try {
+      const userSnap = await getDoc(userRef);
+      let userData: User;
 
-      // Sync to backend users table
+      if (userSnap.exists()) {
+        userData = userSnap.data() as User;
+        console.log('✅ User profile loaded from Firestore:', userData);
+      } else {
+        // Create new user profile in Firestore
+        const nameParts = cleanEmail.split('@')[0].split('.');
+        const formattedName = nameParts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+        
+        // Check for hardcoded admin access
+        const isAdmin = ['ragul.thangarasu@hashouttech.com', 'ragul.thnagarasu@hashouttech.com', 'ragul.thangarasi@hashouttech.com'].includes(cleanEmail);
+        
+        userData = {
+          id: fbUser.uid,
+          name: formattedName,
+          email: cleanEmail,
+          avatar: nameParts.map((p: string) => p.charAt(0).toUpperCase()).join('').substring(0, 2),
+          role: isAdmin ? 'admin' : 'member',
+          preferences: {
+            theme: 'dark',
+            defaultTab: 'dashboard'
+          }
+        };
+
+        await setDoc(userRef, userData);
+        console.log('🆕 New user profile created in Firestore');
+      }
+
+      // Also sync to legacy backend for backward compatibility if needed, but Firestore is now primary
       try {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const API_BASE = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
         await fetch(`${API_BASE}/users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(user)
+          body: JSON.stringify(userData)
         });
       } catch (err) {
-        console.warn('Failed to sync user to backend:', err);
+        console.warn('Backend sync failed (Firestore is active):', err);
       }
+
+      setCurrentUser(userData);
+    } catch (error) {
+      console.error('❌ Firestore sync error:', error);
+      // Fallback to basic user object if Firestore fails
+      setCurrentUser({
+        id: fbUser.uid,
+        name: cleanEmail.split('@')[0],
+        email: cleanEmail,
+        avatar: '??',
+        role: 'member'
+      });
     }
-    
-    setCurrentUser(user);
   }
 
   const handleLogin = (user: User) => {

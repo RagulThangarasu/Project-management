@@ -260,8 +260,13 @@
 }
 
 .modal-content .text-muted,
-.modal-content span {
-  color: #4a5568;
+.modal-content span,
+.modal-content .ql-editor {
+  color: #1a202c !important;
+}
+
+.modal-content .ql-editor.ql-blank::before {
+  color: #a0aec0 !important;
 }
 
 @keyframes slideIn {

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
 import { UserPlus, Trash2, Shield, Mail, CheckCircle, Clock } from 'lucide-react';
 import type { User } from '../types';
+import { db } from '../lib/firebase';
+import { collection, addDoc, getDocs, query, where, deleteDoc, doc, setDoc } from 'firebase/firestore';
 
 interface Invite {
   email: string;
@@ -28,10 +29,20 @@ export const AdminView = ({ currentUser, onInvite, onRemoveInvite, users }: Admi
 
   const fetchInvites = async () => {
     try {
+      // Fetch from Firestore
+      const q = query(collection(db, 'invites'));
+      const querySnapshot = await getDocs(q);
+      const fsInvites = querySnapshot.docs.map(doc => doc.data() as Invite);
+      setInvites(fsInvites);
+
+      // Also try to sync with legacy backend if needed
       const API_BASE = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
       const res = await fetch(`${API_BASE}/invites`);
-      const data = await res.json();
-      setInvites(data);
+      if (res.ok) {
+        const data = await res.json();
+        // Merge or just use Firestore as primary
+        if (fsInvites.length === 0) setInvites(data);
+      }
     } catch (error) {
       console.error('Failed to fetch invites:', error);
     }
@@ -44,26 +55,41 @@ export const AdminView = ({ currentUser, onInvite, onRemoveInvite, users }: Admi
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api'}/invites`, {
+      const cleanEmail = inviteEmail.toLowerCase().trim();
+      
+      // 1. Save to Firestore first
+      const inviteData: Invite = {
+        email: cleanEmail,
+        role: inviteRole,
+        status: 'pending'
+      };
+      
+      await setDoc(doc(db, 'invites', cleanEmail), inviteData);
+      console.log('✅ Invite record saved to Firestore');
+
+      // 2. Trigger Email via Node.js Backend
+      const API_BASE = import.meta.env.VITE_API_URL || 'https://hashout-jira-backend.onrender.com/api';
+      const res = await fetch(`${API_BASE}/invites`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole })
+        body: JSON.stringify({ email: cleanEmail, role: inviteRole })
       });
       const data = await res.json();
       
       if (data.warning) {
         setMessage({ 
-          text: `Invitation created, but the email was blocked by your Microsoft 365 security policy (SMTP AUTH is disabled). Please enable 'Authenticated SMTP' in your M365 Admin Center or share this link manually:`, 
+          text: `Invitation recorded, but email blocked by M365 policy. Copy the link below:`, 
           type: 'error',
           link: data.acceptLink 
         });
       } else {
-        setMessage({ text: `Invitation sent to ${inviteEmail}`, type: 'success' });
+        setMessage({ text: `Invitation sent to ${cleanEmail}`, type: 'success' });
       }
       setInviteEmail('');
       fetchInvites();
     } catch (error) {
-      setMessage({ text: 'Failed to connect to invitation server', type: 'error' });
+      console.error('Invitation Error:', error);
+      setMessage({ text: 'Invite saved to database, but email failed to trigger.', type: 'error' });
     } finally {
       setLoading(false);
     }
