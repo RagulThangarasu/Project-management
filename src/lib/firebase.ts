@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 // ... (rest of the config)
@@ -18,5 +18,8 @@ const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase services
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Use initializeFirestore with long polling to bypass certain network restrictions
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
 export default app;
