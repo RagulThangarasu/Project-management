@@ -343,6 +343,16 @@ export const TaskModal = ({ task, onClose, updateTask, currentUser, taskLists, s
                 )}
               </div>
 
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748b', marginBottom: '0.4rem', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.025em' }}>Audit Trail</div>
+                <div style={{ fontSize: '0.8rem', color: '#1e293b', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#64748b' }}>Created by:</span> <strong>{task.createdBy || 'Unknown'}</strong>
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#1e293b' }}>
+                  <span style={{ color: '#64748b' }}>Created at:</span> <strong>{new Date(task.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</strong>
+                </div>
+              </div>
+
             </div>
 
             {/* Save / Cancel Footer */}

@@ -309,7 +309,8 @@ function App() {
     const newTask: Task = {
       ...taskData,
       id: `${prefix}-${maxId + 1}`,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      createdBy: currentUser?.name || 'Unknown'
     };
     setTasks([...tasks, newTask]);
     setCreatingTaskStatus(null);
@@ -896,7 +897,13 @@ function App() {
                 const form = e.currentTarget;
                 const name = (form.elements.namedItem('sprintName') as HTMLInputElement).value;
                 if (name.trim()) {
-                  const newSprint = { id: `sp-${Date.now()}`, projectId: activeProject.id, name: name.trim() };
+                  const newSprint = { 
+                    id: `sp-${Date.now()}`, 
+                    projectId: activeProject.id, 
+                    name: name.trim(),
+                    createdBy: currentUser?.name || 'Unknown',
+                    createdAt: new Date().toISOString()
+                  };
                   setSprints([...sprints, newSprint]);
                   setActiveSprintId(newSprint.id);
                   setIsCreatingSprint(false);

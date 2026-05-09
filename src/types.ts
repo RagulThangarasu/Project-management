@@ -24,6 +24,8 @@ export type Sprint = {
   id: string;
   projectId: string;
   name: string;
+  createdBy?: string;
+  createdAt?: string;
 };
 
 export type TaskStatus = 'backlog' | 'open' | 'in_progress' | 'in_review' | 'closed' | 'duplicate';
@@ -42,6 +44,7 @@ export type Task = {
   sprintId?: string;
   assignee?: User;
   createdAt: string;
+  createdBy?: string;
   previousSprintId?: string;
   componentName?: string;
   estimatedTime?: string;
