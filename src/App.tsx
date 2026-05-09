@@ -470,16 +470,45 @@ function App() {
           <div style={{ margin: '1.5rem 0 0.5rem', padding: '0 0.75rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             TASK LISTS
             <button 
-              onClick={() => {
-                const name = prompt("Enter task list name:");
-                if (name) addTaskList(name);
-              }} 
+              onClick={() => setIsAddingTaskList(!isAddingTaskList)} 
               className="btn-icon" 
-              style={{ padding: 0, color: 'var(--text-muted)' }}
+              style={{ padding: 0, color: isAddingTaskList ? 'var(--brand-orange)' : 'var(--text-muted)' }}
             >
-              <Plus size={14} />
+              {isAddingTaskList ? <X size={14} /> : <Plus size={14} />}
             </button>
           </div>
+
+          {isAddingTaskList && (
+            <div style={{ padding: '0 0.75rem 0.5rem' }}>
+              <input 
+                autoFocus
+                value={newTaskListName}
+                onChange={e => setNewTaskListName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && newTaskListName.trim()) {
+                    addTaskList(newTaskListName.trim());
+                    setNewTaskListName('');
+                    setIsAddingTaskList(false);
+                  }
+                  if (e.key === 'Escape') {
+                    setIsAddingTaskList(false);
+                    setNewTaskListName('');
+                  }
+                }}
+                placeholder="New list name..."
+                style={{ 
+                  width: '100%', 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid var(--brand-orange)', 
+                  color: '#fff', 
+                  borderRadius: 'var(--radius-sm)', 
+                  padding: '0.4rem 0.6rem',
+                  fontSize: '0.75rem',
+                  outline: 'none'
+                }}
+              />
+            </div>
+          )}
           
           {taskLists.filter(tl => tl.projectId === activeProject.id).map(tl => (
             <div 
