@@ -12,6 +12,7 @@ export type Project = {
   description: string;
   color: string;
   members: string[]; // Array of user IDs
+  pmId?: string;
 };
 
 export type TaskList = {

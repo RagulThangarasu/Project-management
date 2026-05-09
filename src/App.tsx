@@ -1,6 +1,6 @@
 // Build: 2026-05-07T14:40:00Z
 import { useState, useEffect } from 'react';
-import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2, X, Trash2 } from 'lucide-react';
+import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2, X, Trash2, Briefcase, Shield } from 'lucide-react';
 import { mockUsers, mockProjects, mockTaskLists, initialTasks, initialTimeLogs } from './data';
 import { api } from './api';
 import type { Task, User, Project, TimeLog, TaskStatus, TaskList, Sprint } from './types';
@@ -16,6 +16,7 @@ import { CreateTaskModal } from './components/CreateTaskModal';
 import { CustomSelect } from './components/CustomSelect';
 import { ExcelView } from './components/ExcelView';
 import { MetricsView } from './components/MetricsView';
+import { PMView } from './components/PMView';
 import { LoginScreen } from './components/LoginScreen';
 import { AcceptInvite } from './components/AcceptInvite';
 import { auth } from './lib/firebase';
@@ -132,7 +133,7 @@ function App() {
     ? projects.filter(p => currentUser.role === 'admin' || p.members.includes(currentUser.id) || currentUser.role === 'member') 
     : projects;
   const [activeProject, setActiveProject] = useState<Project>(visibleProjects[0]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'backlog' | 'board' | 'list' | 'timesheet' | 'excel' | 'metrics' | 'admin'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'pm' | 'backlog' | 'board' | 'list' | 'timesheet' | 'excel' | 'metrics' | 'admin'>('dashboard');
   const [activeSprintId, setActiveSprintId] = useState<string | 'all'>('all');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [timeLogs, setTimeLogs] = useState<TimeLog[]>([]);
@@ -522,6 +523,9 @@ function App() {
           <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
             <Layout size={18} /> Dashboard
           </div>
+          <div className={`nav-item ${activeTab === 'pm' ? 'active' : ''}`} onClick={() => setActiveTab('pm')}>
+            <Briefcase size={18} /> PM's
+          </div>
           <div style={{ margin: '1rem 0', padding: '0 0.75rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
             CURRENT PROJECT
           </div>
@@ -791,6 +795,16 @@ function App() {
                 setActiveTab('board');
               }}
               onTaskClick={(id) => setSelectedTaskId(id)}
+            />
+          )}
+          {activeTab === 'pm' && (
+            <PMView 
+              projects={projects} 
+              users={users} 
+              onProjectClick={(p) => {
+                setActiveProject(p);
+                setActiveTab('board');
+              }}
             />
           )}
           {activeTab === 'backlog' && (
