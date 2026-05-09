@@ -98,16 +98,22 @@ function App() {
         console.warn('Backend sync failed (Firestore is active):', err);
       }
 
+      // Final safety check: Always enforce admin for authorized emails in the local state
+      if (isAdmin) {
+        userData.role = 'admin';
+      }
+
       setCurrentUser(userData);
     } catch (error) {
       console.error('❌ Firestore sync error:', error);
       // Fallback to basic user object if Firestore fails
+      const isAdmin = ['ragul.thangarasu@hashouttech.com', 'ragul.thnagarasu@hashouttech.com', 'ragul.thangarasi@hashouttech.com'].includes(cleanEmail);
       setCurrentUser({
         id: fbUser.uid,
         name: cleanEmail.split('@')[0],
         email: cleanEmail,
         avatar: '??',
-        role: 'member'
+        role: isAdmin ? 'admin' : 'member'
       });
     }
   }
