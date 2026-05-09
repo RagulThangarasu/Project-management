@@ -786,7 +786,10 @@ function App() {
               taskLists={taskLists}
               onCreateProject={addProject}
               onDeleteProject={deleteProject}
-              onProjectClick={(p) => setActiveProject(p)}
+              onProjectClick={(p) => {
+                setActiveProject(p);
+                setActiveTab('board');
+              }}
               onTaskClick={(id) => setSelectedTaskId(id)}
             />
           )}
