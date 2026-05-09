@@ -52,17 +52,23 @@ function App() {
     try {
       const userSnap = await getDoc(userRef);
       let userData: User;
+      const isAdmin = ['ragul.thangarasu@hashouttech.com', 'ragul.thnagarasu@hashouttech.com', 'ragul.thangarasi@hashouttech.com'].includes(cleanEmail);
 
       if (userSnap.exists()) {
         userData = userSnap.data() as User;
+        
+        // Force admin role for authorized emails
+        if (isAdmin && userData.role !== 'admin') {
+          userData.role = 'admin';
+          await updateDoc(userRef, { role: 'admin' });
+          console.log('⚡ Admin role enforced for authorized email');
+        }
+        
         console.log('✅ User profile loaded from Firestore:', userData);
       } else {
         // Create new user profile in Firestore
         const nameParts = cleanEmail.split('@')[0].split('.');
         const formattedName = nameParts.map((p: string) => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
-        
-        // Check for hardcoded admin access
-        const isAdmin = ['ragul.thangarasu@hashouttech.com', 'ragul.thnagarasu@hashouttech.com', 'ragul.thangarasi@hashouttech.com'].includes(cleanEmail);
         
         userData = {
           id: fbUser.uid,
