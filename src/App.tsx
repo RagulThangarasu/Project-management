@@ -179,24 +179,37 @@ function App() {
         setTimeLogs(data.timeLogs || initialTimeLogs);
 
         const firstProjectId = loadedProjects[0]?.id;
-        const first = data.sprints.find((s: Sprint) => s.projectId === firstProjectId);
+        const first = (data.sprints || []).find((s: Sprint) => s.projectId === firstProjectId);
         if (first) setActiveSprintId(first.id);
         
         setIsBackendWaking(false);
       } catch (err: any) {
         console.warn('Backend connection issue (using offline mode):', err);
-        // DO NOT set loadError here, let the user enter the app in offline mode.
-        setIsBackendWaking(true); // Keep trying to wake it up in background
+        setIsBackendWaking(true); 
         
-        // Fallback to local data
-        setUsers(mockUsers);
-        setTasks(initialTasks);
-        setSprints(mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
-        setTaskLists(mockTaskLists);
-        setTimeLogs(initialTimeLogs);
+        // Fallback to localStorage OR mock data
+        const localProjects = localStorage.getItem('hashout_projects');
+        const localTasks = localStorage.getItem('hashout_tasks');
+        const localLists = localStorage.getItem('hashout_task_lists');
+        const localSprints = localStorage.getItem('hashout_sprints');
+
+        if (localProjects) {
+          setProjects(JSON.parse(localProjects));
+          setTasks(localTasks ? JSON.parse(localTasks) : initialTasks);
+          setTaskLists(localLists ? JSON.parse(localLists) : mockTaskLists);
+          setSprints(localSprints ? JSON.parse(localSprints) : []);
+          setUsers(mockUsers);
+          setTimeLogs(initialTimeLogs);
+        } else {
+          setUsers(mockUsers);
+          setProjects(mockProjects);
+          setTasks(initialTasks);
+          setSprints(mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
+          setTaskLists(mockTaskLists);
+          setTimeLogs(initialTimeLogs);
+        }
       } finally {
         setIsLoaded(true);
-        // Stop the wake indicator after a while even if failed
         setTimeout(() => setIsBackendWaking(false), 8000);
       }
     };
@@ -205,11 +218,21 @@ function App() {
 
   useEffect(() => {
     if (!currentUser) return;
-    const userVisibleProjects = mockProjects.filter(p => currentUser.role === 'admin' || p.members.includes(currentUser.id));
-    if (!userVisibleProjects.some(p => p.id === activeProject.id)) {
+    const userVisibleProjects = projects.filter(p => currentUser.role === 'admin' || p.members.includes(currentUser.id) || currentUser.role === 'member');
+    if (userVisibleProjects.length > 0 && !userVisibleProjects.some(p => p.id === activeProject.id)) {
       setActiveProject(userVisibleProjects[0]);
     }
-  }, [currentUser, activeProject.id]);
+  }, [currentUser, activeProject.id, projects]);
+
+  // Persist to localStorage for Offline Mode
+  useEffect(() => {
+    if (isLoaded && projects.length > 0) {
+      localStorage.setItem('hashout_projects', JSON.stringify(projects));
+      localStorage.setItem('hashout_tasks', JSON.stringify(tasks));
+      localStorage.setItem('hashout_task_lists', JSON.stringify(taskLists));
+      localStorage.setItem('hashout_sprints', JSON.stringify(sprints));
+    }
+  }, [isLoaded, projects, tasks, taskLists, sprints]);
 
   useEffect(() => {
     const firstSprint = sprints.find((s: Sprint) => s.projectId === activeProject.id);
