@@ -157,7 +157,8 @@ function App() {
         const safeSprints = data.sprints || [];
         const safeUsers = data.users || [];
 
-        if (safeTasks.length === 0 && safeSprints.length === 0) {
+        // Only seed if projects AND users are both empty (fresh DB)
+        if ((!data.projects || data.projects.length === 0) && (!data.users || data.users.length === 0)) {
           const defaultSprints = mockProjects.map(p => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' }));
           await api.seedData({ tasks: initialTasks, sprints: defaultSprints, taskLists: mockTaskLists, timeLogs: initialTimeLogs, users: mockUsers, projects: mockProjects });
           data = await api.getData();
@@ -169,8 +170,8 @@ function App() {
         const hashoutUsers = (data.users || []).filter((u: User) => u.email);
         setUsers(hashoutUsers.length > 0 ? hashoutUsers : mockUsers);
         
-        const loadedProjects = data.projects && data.projects.length > 0 ? data.projects : mockProjects;
-        setProjects(loadedProjects);
+        const loadedProjects = data.projects || [];
+        setProjects(loadedProjects.length > 0 ? loadedProjects : (data.projects ? [] : mockProjects));
         
         setTasks(data.tasks || initialTasks);
         setSprints(data.sprints || loadedProjects.map((p: Project) => ({ id: `sp-${p.id}-1`, projectId: p.id, name: 'Sprint 0' })));
