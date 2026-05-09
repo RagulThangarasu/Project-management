@@ -1,13 +1,15 @@
 import React from 'react';
-import { BarChart2, Users, PieChart, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import type { Task, User, TaskStatus } from '../types';
+import { BarChart2, Users, PieChart, CheckCircle2, Clock, AlertCircle, Briefcase, TrendingUp } from 'lucide-react';
+import type { Task, User, TaskStatus, Project, TaskList } from '../types';
 
 interface MetricsViewProps {
   tasks: Task[];
   users: User[];
+  projects: Project[];
+  taskLists: TaskList[];
 }
 
-export const MetricsView = ({ tasks, users }: MetricsViewProps) => {
+export const MetricsView = ({ tasks, users, projects, taskLists }: MetricsViewProps) => {
   const statusCounts = tasks.reduce((acc, task) => {
     acc[task.status] = (acc[task.status] || 0) + 1;
     return acc;
@@ -28,6 +30,26 @@ export const MetricsView = ({ tasks, users }: MetricsViewProps) => {
       inProgress: userTasks.filter(t => t.status === 'in_progress' || t.status === 'in_review').length
     };
   });
+
+  // PM-specific metrics
+  const pmMetrics = users
+    .filter(u => u.role === 'admin')
+    .map(pm => {
+      const pmProjects = projects.filter(p => p.pmId === pm.id || (!p.pmId && p.members.includes(pm.id)));
+      const pmTasks = tasks.filter(t => {
+        const tl = taskLists.find(l => l.id === t.taskListId);
+        return tl && pmProjects.some(p => p.id === tl.projectId);
+      });
+
+      return {
+        pm,
+        projectsCount: pmProjects.length,
+        totalTasks: pmTasks.length,
+        completedTasks: pmTasks.filter(t => t.status === 'closed').length,
+        completionRate: pmTasks.length > 0 ? Math.round((pmTasks.filter(t => t.status === 'closed').length / pmTasks.length) * 100) : 0
+      };
+    })
+    .filter(m => m.projectsCount > 0);
 
   const statusColors: Record<TaskStatus, string> = {
     backlog: 'var(--text-muted)',
@@ -112,6 +134,50 @@ export const MetricsView = ({ tasks, users }: MetricsViewProps) => {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* PM Performance Section */}
+      <div className="glass-card" style={{ padding: '2rem' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '2rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Briefcase size={18} /> PM Oversight & Velocity
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          {pmMetrics.map((m) => (
+            <div key={m.pm.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 'var(--radius-lg)', padding: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
+                <div className="avatar" style={{ width: 40, height: 40, fontSize: '0.9rem', background: 'var(--brand-orange)', border: 'none' }}>
+                  {m.pm.avatar}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{m.pm.name}</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--brand-orange)', fontWeight: 700, textTransform: 'uppercase' }}>Project Manager</div>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Projects Managed</span>
+                  <span style={{ fontWeight: 700 }}>{m.projectsCount}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Team Completion</span>
+                  <span style={{ fontWeight: 700, color: 'var(--status-closed)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <TrendingUp size={14} /> {m.completionRate}%
+                  </span>
+                </div>
+                <div style={{ marginTop: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: '0.3rem', color: 'var(--text-muted)' }}>
+                    <span>Progress</span>
+                    <span>{m.completedTasks} / {m.totalTasks} tasks</span>
+                  </div>
+                  <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${m.completionRate}%`, background: 'var(--brand-orange)', borderRadius: '3px' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

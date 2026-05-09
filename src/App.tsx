@@ -861,8 +861,10 @@ function App() {
           )}
           {activeTab === 'metrics' && (
             <MetricsView 
-              tasks={filteredTasks} 
+              tasks={tasks} 
               users={users} 
+              projects={projects}
+              taskLists={taskLists}
             />
           )}
           {activeTab === 'timesheet' && (
