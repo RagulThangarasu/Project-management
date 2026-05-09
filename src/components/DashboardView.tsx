@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Layout, CheckCircle, Clock, AlertTriangle, FolderOpen, ArrowRight, Bug, BookOpen, Wrench, Users, Zap, TrendingUp, Trash2 } from 'lucide-react';
 import type { Task, TimeLog, User, Project, TaskList } from '../types';
 import { mockUsers } from '../data';
+import { CreateProjectModal } from './CreateProjectModal';
 
 interface DashboardViewProps {
   tasks: Task[];               // filtered tasks (current project + sprint)
@@ -10,7 +10,7 @@ interface DashboardViewProps {
   allProjects: Project[];      // ALL projects in the system
   allTasks: Task[];             // ALL tasks across projects
   taskLists: TaskList[];        // to resolve project membership
-  onCreateProject?: (name: string, description: string) => void;
+  onCreateProject?: (name: string, description: string, color: string) => void;
   onDeleteProject?: (projectId: string) => void;
   onProjectClick: (project: Project) => void;
   onTaskClick: (taskId: string) => void;
@@ -50,6 +50,7 @@ export const DashboardView = ({
 }: DashboardViewProps) => {
   const [myTasksFilter, setMyTasksFilter] = useState<'all' | 'in_progress' | 'open' | 'in_review'>('all');
   const [confirmingDeleteProjectId, setConfirmingDeleteProjectId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   // ── Projects accessible to me ──
   const myProjects = allProjects.filter(
     (p) => currentUser.role === 'admin' || p.members.includes(currentUser.id)
@@ -158,12 +159,7 @@ export const DashboardView = ({
             <button 
               className="btn btn-primary" 
               style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}
-              onClick={() => {
-                const name = prompt("Enter project name:");
-                if (!name) return;
-                const desc = prompt("Enter project description (optional):") || "";
-                onCreateProject(name, desc);
-              }}
+              onClick={() => setIsCreateModalOpen(true)}
             >
               + New Project
             </button>
@@ -694,6 +690,16 @@ export const DashboardView = ({
           </div>
         </div>
       )}
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* CREATE PROJECT MODAL */}
+      {/* ═══════════════════════════════════════════════════ */}
+      <CreateProjectModal 
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={(name, desc, color) => {
+          if (onCreateProject) onCreateProject(name, desc, color);
+        }}
+      />
     </div>
   );
 };

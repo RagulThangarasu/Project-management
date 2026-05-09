@@ -327,12 +327,12 @@ function App() {
     await api.createTimeLog(newLog);
   };
 
-  const addProject = async (name: string, description: string) => {
+  const addProject = async (name: string, description: string, color: string) => {
     const newProject: Project = {
       id: `p-${Date.now()}`,
       name,
       description,
-      color: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+      color,
       members: currentUser ? [currentUser.id] : []
     };
     setProjects([...projects, newProject]);
