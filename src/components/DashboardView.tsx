@@ -45,6 +45,8 @@ export const DashboardView = ({
   taskLists,
   onProjectClick,
   onTaskClick,
+  onCreateProject,
+  onDeleteProject,
 }: DashboardViewProps) => {
   const [myTasksFilter, setMyTasksFilter] = useState<'all' | 'in_progress' | 'open' | 'in_review'>('all');
   // ── Projects accessible to me ──
