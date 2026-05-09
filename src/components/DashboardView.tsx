@@ -49,6 +49,7 @@ export const DashboardView = ({
   onDeleteProject,
 }: DashboardViewProps) => {
   const [myTasksFilter, setMyTasksFilter] = useState<'all' | 'in_progress' | 'open' | 'in_review'>('all');
+  const [confirmingDeleteProjectId, setConfirmingDeleteProjectId] = useState<string | null>(null);
   // ── Projects accessible to me ──
   const myProjects = allProjects.filter(
     (p) => currentUser.role === 'admin' || p.members.includes(currentUser.id)
@@ -206,29 +207,36 @@ export const DashboardView = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Are you sure you want to delete the project "${project.name}"? This action cannot be undone.`)) {
-                        onDeleteProject(project.id);
-                      }
+                      setConfirmingDeleteProjectId(project.id);
                     }}
                     style={{
                       position: 'absolute',
-                      top: '1rem',
-                      right: '1rem',
+                      top: '1.25rem',
+                      right: '1.25rem',
                       background: 'rgba(239, 68, 68, 0.1)',
                       color: '#ef4444',
                       border: 'none',
-                      borderRadius: '50%',
-                      width: '28px',
-                      height: '28px',
+                      borderRadius: '8px',
+                      width: '32px',
+                      height: '32px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      zIndex: 10
+                      zIndex: 20,
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = '#ef4444';
+                      e.currentTarget.style.color = '#fff';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                      e.currentTarget.style.color = '#ef4444';
                     }}
                     title="Delete Project"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 )}
                 {/* Top accent bar */}
@@ -244,7 +252,7 @@ export const DashboardView = ({
                   }}
                 />
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', paddingRight: currentUser.role === 'admin' ? '3rem' : '0' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div
                       style={{
@@ -630,6 +638,62 @@ export const DashboardView = ({
           </div>
         </div>
       </div>
+      {/* ═══════════════════════════════════════════════════ */}
+      {/* DELETE CONFIRMATION MODAL */}
+      {/* ═══════════════════════════════════════════════════ */}
+      {confirmingDeleteProjectId && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setConfirmingDeleteProjectId(null)}
+          style={{ zIndex: 10000, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }}
+        >
+          <div 
+            className="modal-content animate-slide-in" 
+            onClick={e => e.stopPropagation()}
+            style={{ 
+              maxWidth: '420px', 
+              padding: '2.5rem', 
+              textAlign: 'center',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              background: 'linear-gradient(180deg, var(--bg-surface) 0%, rgba(20,20,20,1) 100%)'
+            }}
+          >
+            <div style={{ 
+              width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem',
+              color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)'
+            }}>
+              <Trash2 size={32} />
+            </div>
+            
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.75rem', color: '#fff' }}>Delete Project?</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '2rem' }}>
+              Are you sure you want to delete <strong>"{allProjects.find(p => p.id === confirmingDeleteProjectId)?.name}"</strong>? 
+              This action is permanent and will delete all associated tasks and data.
+            </p>
+            
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ flex: 1, padding: '0.8rem' }}
+                onClick={() => setConfirmingDeleteProjectId(null)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '0.8rem', background: '#ef4444' }}
+                onClick={() => {
+                  if (onDeleteProject) onDeleteProject(confirmingDeleteProjectId);
+                  setConfirmingDeleteProjectId(null);
+                }}
+              >
+                Delete Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

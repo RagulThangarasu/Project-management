@@ -684,6 +684,7 @@ function App() {
               activeProject={activeProject}
               updateTask={updateTask} 
               deleteTask={deleteTask} 
+              addTask={addTask}
               currentUser={currentUser} 
               onTaskClick={setSelectedTaskId} 
               onBackHome={() => setActiveTab('dashboard')}

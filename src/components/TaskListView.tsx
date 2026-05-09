@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Task, User, TaskStatus, TaskList, Project } from '../types';
-import { Trash2, Edit, Trash, Home, AlertCircle } from 'lucide-react';
+import { Trash2, Edit, Trash, Home, AlertCircle, Plus, Check, X as CloseIcon } from 'lucide-react';
 import { Dropdown } from './ui/Dropdown';
 import { Tooltip } from './ui/Tooltip';
 
@@ -10,6 +10,7 @@ interface TaskListViewProps {
   activeProject: Project;
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   currentUser: User;
   onTaskClick: (taskId: string) => void;
   onBackHome: () => void;
@@ -30,10 +31,40 @@ const priorityConfig: Record<string, { color: string; bg: string }> = {
   low:    { color: '#93c5fd', bg: 'rgba(59,130,246,0.15)' },
 };
 
-export const TaskListView = ({ tasks = [], taskLists = [], activeProject, updateTask, deleteTask, currentUser, onTaskClick, onBackHome }: TaskListViewProps) => {
+export const TaskListView = ({ 
+  tasks = [], 
+  taskLists = [], 
+  activeProject, 
+  updateTask, 
+  deleteTask, 
+  addTask,
+  currentUser, 
+  onTaskClick, 
+  onBackHome 
+}: TaskListViewProps) => {
+  const [inlineCreatingListId, setInlineCreatingListId] = useState<string | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+
   if (!activeProject) return null;
 
   const projectTaskLists = taskLists.filter(tl => tl.projectId === activeProject.id);
+
+  const handleCreateInlineTask = (listId: string) => {
+    if (!newTaskTitle.trim()) return;
+    
+    addTask({
+      title: newTaskTitle.trim(),
+      description: '',
+      status: 'open',
+      priority: 'medium',
+      type: 'task',
+      taskListId: listId,
+      assignee: currentUser
+    });
+    
+    setNewTaskTitle('');
+    setInlineCreatingListId(null);
+  };
 
   if (projectTaskLists.length === 0) {
     return (
@@ -91,72 +122,120 @@ export const TaskListView = ({ tasks = [], taskLists = [], activeProject, update
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {listTasks.length > 0 ? (
-                listTasks.map(task => {
-                  const sc = statusConfig[task.status] || statusConfig.open;
-                  const pc = priorityConfig[task.priority] || priorityConfig.medium;
-                  
-                  return (
-                    <div
-                      key={task.id}
-                      onClick={() => onTaskClick(task.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '1rem',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                      }}
-                    >
-                      <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: sc.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: '0.75rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', minWidth: '75px' }}>{task.id}</span>
-                      <span style={{ flex: 1, fontSize: '0.95rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</span>
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} onClick={e => e.stopPropagation()}>
-                        <div style={{
-                          padding: '3px 10px', borderRadius: '12px', background: sc.bg, color: sc.color,
-                          border: `1px solid ${sc.color}30`, fontSize: '0.7rem', fontWeight: 700
-                        }}>
-                          {sc.label}
-                        </div>
-                        
-                        <span style={{
-                          padding: '3px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800,
-                          textTransform: 'uppercase', background: pc.bg, color: pc.color, border: `1px solid ${pc.color}25`
-                        }}>{task.priority}</span>
+              {listTasks.map(task => {
+                const sc = statusConfig[task.status] || statusConfig.open;
+                const pc = priorityConfig[task.priority] || priorityConfig.medium;
+                
+                return (
+                  <div
+                    key={task.id}
+                    onClick={() => onTaskClick(task.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '1rem',
+                      padding: '1rem',
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                    }}
+                  >
+                    <div style={{ width: '3px', height: '20px', borderRadius: '2px', background: sc.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text-muted)', minWidth: '75px' }}>{task.id}</span>
+                    <span style={{ flex: 1, fontSize: '0.95rem', fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{task.title}</span>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }} onClick={e => e.stopPropagation()}>
+                      <div style={{
+                        padding: '3px 10px', borderRadius: '12px', background: sc.bg, color: sc.color,
+                        border: `1px solid ${sc.color}30`, fontSize: '0.7rem', fontWeight: 700
+                      }}>
+                        {sc.label}
                       </div>
-
-                      {task.assignee && (
-                        <Tooltip content={task.assignee.name}>
-                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                            {task.assignee.avatar}
-                          </div>
-                        </Tooltip>
-                      )}
-
-                      <Dropdown 
-                        items={[
-                          { label: 'Edit', onClick: () => onTaskClick(task.id), icon: <Edit size={14}/> },
-                          { label: 'Delete', onClick: () => deleteTask(task.id), icon: <Trash size={14}/>, variant: 'danger' }
-                        ]} 
-                      />
+                      
+                      <span style={{
+                        padding: '3px 10px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: 800,
+                        textTransform: 'uppercase', background: pc.bg, color: pc.color, border: `1px solid ${pc.color}25`
+                      }}>{task.priority}</span>
                     </div>
-                  );
-                })
-              ) : (
-                <div style={{ padding: '2.5rem', textAlign: 'center', background: 'rgba(255,255,255,0.015)', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.1)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  No tasks in this list
+
+                    {task.assignee && (
+                      <Tooltip content={task.assignee.name}>
+                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-orange), #ff7043)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                          {task.assignee.avatar}
+                        </div>
+                      </Tooltip>
+                    )}
+
+                    <Dropdown 
+                      items={[
+                        { label: 'Edit', onClick: () => onTaskClick(task.id), icon: <Edit size={14}/> },
+                        { label: 'Delete', onClick: () => deleteTask(task.id), icon: <Trash size={14}/>, variant: 'danger' }
+                      ]} 
+                    />
+                  </div>
+                );
+              })}
+
+              {/* Inline Task Creator */}
+              {inlineCreatingListId === taskList.id ? (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '1rem',
+                  padding: '0.75rem 1rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid var(--brand-orange)',
+                  borderRadius: '12px',
+                  animation: 'fadeIn 0.2s ease'
+                }}>
+                  <input 
+                    autoFocus
+                    value={newTaskTitle}
+                    onChange={e => setNewTaskTitle(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleCreateInlineTask(taskList.id);
+                      if (e.key === 'Escape') setInlineCreatingListId(null);
+                    }}
+                    placeholder="Enter task name..."
+                    style={{ flex: 1, background: 'none', border: 'none', color: '#fff', outline: 'none', fontSize: '0.95rem' }}
+                  />
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      className="btn-icon" 
+                      onClick={() => handleCreateInlineTask(taskList.id)}
+                      style={{ color: '#10b981' }}
+                    >
+                      <Check size={18} />
+                    </button>
+                    <button 
+                      className="btn-icon" 
+                      onClick={() => setInlineCreatingListId(null)}
+                      style={{ color: '#ef4444' }}
+                    >
+                      <CloseIcon size={18} />
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <button 
+                  className="btn-ghost"
+                  onClick={() => setInlineCreatingListId(taskList.id)}
+                  style={{ 
+                    display: 'flex', alignItems: 'center', gap: '0.75rem', 
+                    padding: '0.75rem 1rem', width: '100%', 
+                    borderRadius: '12px', color: 'var(--text-muted)',
+                    fontSize: '0.85rem', fontWeight: 600,
+                    border: '1px dashed rgba(255,255,255,0.06)'
+                  }}
+                >
+                  <Plus size={16} /> Add Task
+                </button>
               )}
             </div>
           </div>
