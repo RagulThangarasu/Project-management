@@ -300,6 +300,16 @@ function App() {
     }
   };
 
+  const addTaskList = async (name: string) => {
+    const newList: TaskList = {
+      id: `tl-${Date.now()}`,
+      projectId: activeProject.id,
+      name
+    };
+    setTaskLists([...taskLists, newList]);
+    await api.createTaskList(newList);
+  };
+
   const projectSprints = sprints.filter((s: Sprint) => s.projectId === activeProject.id);
 
   // The first sprint of the current project acts as "Sprint 1" — tasks with no sprintId belong here
@@ -456,6 +466,31 @@ function App() {
           <div className={`nav-item ${activeTab === 'timesheet' ? 'active' : ''}`} onClick={() => setActiveTab('timesheet')}>
             <Clock size={18} /> Timesheets
           </div>
+
+          <div style={{ margin: '1.5rem 0 0.5rem', padding: '0 0.75rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            TASK LISTS
+            <button 
+              onClick={() => {
+                const name = prompt("Enter task list name:");
+                if (name) addTaskList(name);
+              }} 
+              className="btn-icon" 
+              style={{ padding: 0, color: 'var(--text-muted)' }}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          
+          {taskLists.filter(tl => tl.projectId === activeProject.id).map(tl => (
+            <div 
+              key={tl.id} 
+              className="nav-item" 
+              onClick={() => setActiveTab('list')}
+              style={{ paddingLeft: '1.5rem', fontSize: '0.85rem' }}
+            >
+              <List size={14} /> {tl.name}
+            </div>
+          ))}
           <div className={`nav-item ${activeTab === 'excel' ? 'active' : ''}`} onClick={() => setActiveTab('excel')}>
             <FileText size={18} /> Excel View
           </div>
