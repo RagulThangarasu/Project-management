@@ -523,8 +523,11 @@ function App() {
           <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
             <Layout size={18} /> Dashboard
           </div>
-          <div className={`nav-item ${activeTab === 'pm' ? 'active' : ''}`} onClick={() => setActiveTab('pm')}>
-            <Briefcase size={18} /> PM's
+          <div className={`nav-item ${activeTab === 'pm' ? 'active' : ''}`} onClick={() => setActiveTab('pm')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Briefcase size={18} /> PM's
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, opacity: 0.6 }}>0</span>
           </div>
           <div style={{ margin: '1rem 0', padding: '0 0.75rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
             CURRENT PROJECT
