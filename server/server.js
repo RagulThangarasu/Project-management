@@ -114,11 +114,6 @@ app.post('/api/task_lists', async (req, res) => {
   res.json(tl);
 });
 
-app.delete('/api/task_lists/:id', async (req, res) => {
-  await db.run('DELETE FROM task_lists WHERE id = ?', req.params.id);
-  res.json({ success: true });
-});
-
 app.post('/api/time_logs', async (req, res) => {
   const log = req.body;
   await db.run('INSERT OR REPLACE INTO time_logs (id, data) VALUES (?, ?)', [log.id, JSON.stringify(log)]);

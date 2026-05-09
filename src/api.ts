@@ -59,10 +59,6 @@ export const api = {
     });
     return res.json();
   },
-  async deleteTaskList(id: string) {
-    const res = await fetch(`${API_URL}/task_lists/${id}`, { method: 'DELETE' });
-    return res.json();
-  },
   async createTimeLog(log: TimeLog) {
     const res = await fetch(`${API_URL}/time_logs`, {
       method: 'POST',
