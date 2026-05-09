@@ -1,6 +1,6 @@
 // Build: 2026-05-07T14:40:00Z
 import { useState, useEffect } from 'react';
-import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2, X } from 'lucide-react';
+import { FileText, Layout, List, CheckSquare, Clock, Plus, Layers, ChevronDown, BarChart2, X, Trash2 } from 'lucide-react';
 import { mockUsers, mockProjects, mockTaskLists, initialTasks, initialTimeLogs } from './data';
 import { api } from './api';
 import type { Task, User, Project, TimeLog, TaskStatus, TaskList, Sprint } from './types';
@@ -362,6 +362,12 @@ function App() {
     await api.createTaskList(newList);
   };
 
+  const deleteTaskList = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this task list?')) return;
+    setTaskLists(taskLists.filter(tl => tl.id !== id));
+    await api.deleteTaskList(id);
+  };
+
   const projectSprints = sprints.filter((s: Sprint) => s.projectId === activeProject.id);
 
   // The first sprint of the current project acts as "Sprint 1" — tasks with no sprintId belong here
@@ -567,9 +573,36 @@ function App() {
               key={tl.id} 
               className="nav-item" 
               onClick={() => setActiveTab('list')}
-              style={{ paddingLeft: '1.5rem', fontSize: '0.85rem' }}
+              style={{ paddingLeft: '1.5rem', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
             >
-              <List size={14} /> {tl.name}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <List size={14} /> {tl.name}
+              </div>
+              {currentUser?.role === 'admin' && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteTaskList(tl.id);
+                  }}
+                  className="nav-item-delete"
+                  style={{ 
+                    padding: '0.2rem', 
+                    color: 'var(--text-muted)', 
+                    background: 'none', 
+                    border: 'none',
+                    cursor: 'pointer',
+                    opacity: 0,
+                    transition: 'opacity 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                >
+                  <Trash2 size={12} />
+                </button>
+              )}
             </div>
           ))}
           <div className={`nav-item ${activeTab === 'excel' ? 'active' : ''}`} onClick={() => setActiveTab('excel')}>

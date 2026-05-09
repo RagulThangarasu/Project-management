@@ -78,5 +78,9 @@ export const api = {
   async deleteProject(id: string) {
     const res = await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
     return res.json();
+  },
+  async deleteTaskList(id: string) {
+    const res = await fetch(`${API_URL}/task_lists/${id}`, { method: 'DELETE' });
+    return res.json();
   }
 };

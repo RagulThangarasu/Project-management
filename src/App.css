@@ -57,6 +57,10 @@
   background: rgba(99, 102, 241, 0.1);
 }
 
+.nav-item:hover .nav-item-delete {
+  opacity: 1 !important;
+}
+
 .main-area {
   flex: 1;
   display: flex;
